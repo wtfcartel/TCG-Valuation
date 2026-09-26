@@ -147,6 +147,11 @@ export async function renderValuationReport(payload: Payload, meta: { sha256: st
     w.p(`Not valued (insufficient evidence): ${payload.unvaluedAssets.join(", ")}`, { color: "#8a4b00" });
   }
 
+  if (payload.evidenceProvenance) {
+    w.h2("Evidence provenance");
+    w.p(payload.evidenceProvenance, { color: "#8a0000" });
+  }
+
   w.h2("Purpose and basis of value");
   w.p(payload.purposeDefinition);
 
@@ -207,7 +212,7 @@ export async function renderValuationReport(payload: Payload, meta: { sha256: st
       ["Date", "Venue / source", "Reference", "Amount", "Premium", "FX", `Basis (${ccy})`, "Tier", "Dev."],
       (v.comparablesUsed as Payload[]).map((c) => [
         c.observed_at,
-        `${c.venue ?? ""} [${c.source_id}]`,
+        `${c.venue ?? ""} [${c.source_id}]${c.licence_status === "unlicensed" ? "\nUNLICENSED/SCRAPED" : ""}`,
         `${c.source_reference}${c.source_url ? `\n${c.source_url}` : ""}`,
         money(c.amount_minor, c.currency),
         money(c.buyers_premium_minor, c.currency),
@@ -315,19 +320,23 @@ export async function renderInsuranceReport(payload: Payload, meta: { sha256: st
 
   w.h2("Evidence");
   w.table(
-    ["Asset", "Valuation ID", "Date", "Method", "Confidence", "n", "Inputs hash"],
+    ["Asset", "Valuation ID", "Date", "Method", "Confidence", "n (unlic.)", "Inputs hash"],
     (payload.evidence as Payload[]).map((e) => [
       e.assetRef,
       e.valuationId,
       e.valuationDate,
       e.method,
       e.confidence,
-      String(e.comparablesUsed),
+      `${e.comparablesUsed}${e.unlicensedComparablesUsed ? ` (${e.unlicensedComparablesUsed})` : ""}`,
       String(e.inputsHash).slice(0, 16),
     ]),
-    [50, 130, 50, 75, 55, 20, 115],
+    [50, 120, 50, 70, 55, 35, 115],
   );
 
+  if (payload.evidenceProvenance) {
+    w.h2("Evidence provenance");
+    w.p(payload.evidenceProvenance, { color: "#8a0000" });
+  }
   if (payload.methodology) {
     w.h2("Methodology");
     w.p(`${payload.methodology.name} (${payload.methodology.id}) — ${payload.methodology.documentRef}`);

@@ -19,6 +19,16 @@ Status below reflects what is publicly known and what the reference projects act
 | **Commercial sales-data vendors** (e.g. Card Ladder, Alt, 130point, CardHedger, PokemonPriceTracker, JustTCG) | Varies: some provide transaction-level sold data, others aggregates | Paid APIs | Licence terms decide whether per-transaction data can go into reports **(verify each)** | Implement as new `SourceAdapter`s once licensed |
 | **ECB euro reference rates** | Daily FX | Free, public | Free reuse with attribution | Recommended FX source; add a scheduled importer (Phase 2). Manual/API entry exists now (`POST /api/fx-rates`) |
 
+## Unlicensed / scraped evidence (business-accepted risk)
+
+On 2026-09-26 the product owner chose to use eBay sold-listing data without a licence from eBay, accepting the risk of a cease-and-desist.
+
+- **`ebay_sold_scrape`** (licence status `unlicensed`). Ingests *saved* eBay "Sold items" result pages (`POST /api/assets/:id/evidence/ebay-page`, or the "Import saved eBay sold page" button in the UI). The parser handles both the older `s-item` and newer `s-card` markup. Titles are matched to the catalogue identity on name, card number, language and edition. Listings that don't match are dropped: lots, proxies, "PSA 10 candidate" raw cards, price ranges, wrong language or edition. The grade is parsed from the title; the raw condition only if the title states it.
+- **Best Offer sales** are stored but marked `unverified`, so the engine rejects them. eBay shows the struck-through asking price, not the accepted price.
+- **Labelling.** Every such comparable is tagged UNLICENSED/SCRAPED in the evidence schedule. Both the valuation report and the insurer adjustment report include an "Evidence provenance" disclosure giving the count. Insurers relying on the report can therefore see the provenance.
+- **Not built:** an automated live fetcher. This environment's safety controls blocked contacting eBay/Whatnot, so it needs the owner to enable that access. Any fetcher would be limited to public pages, rate-limited, and would identify itself honestly. It would have no logins, CAPTCHA solving or bot-detection evasion. **Whatnot** is deferred until it is confirmed which sold data, if any, is visible publicly without logging in.
+- The parser was built against a representative fixture. **Validate it against real saved pages** before relying on it; eBay changes its markup.
+
 ## What is genuinely usable today, without a commercial agreement
 
 1. **Catalogue:** TCGdex (Pokémon), plus manual catalogue entries for every other game.

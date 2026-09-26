@@ -102,7 +102,7 @@ input, select, button, .button { font: inherit; font-size: 0.9rem; padding: 0.45
 button, .button { cursor: pointer; }
 button:hover, .button:hover { border-color: var(--accent); }
 button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
+button:disabled, .button.disabled { opacity: 0.5; cursor: not-allowed; }
 button.link { background: none; border: none; color: var(--accent); padding: 0.2rem; }
 label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.82rem; color: var(--text-secondary); }
 label.inline { flex-direction: row; align-items: center; gap: 0.4rem; }

@@ -19,6 +19,16 @@ export const LIMITATIONS = [
   "Cardcore does not calculate insurance premiums or determine cover. Whether and when a change in declared value affects cover or premium is determined solely by the insurer.",
 ];
 
+/** Mandatory disclosure when any concluded value relies on evidence collected without a data licence. */
+export function provenanceStatement(unlicensedCount: number): string | null {
+  if (unlicensedCount === 0) return null;
+  return (
+    `UNLICENSED / SCRAPED EVIDENCE: ${unlicensedCount} comparable sale(s) relied on in this report were collected from public marketplace ` +
+    `pages without a data licence from the marketplace operator. They are marked individually in the evidence schedule. The recipient ` +
+    `should weigh this provenance when relying on the values concluded.`
+  );
+}
+
 export function methodologyReviewStatement(
   reviews: Array<{ reviewer_name: string; credentials: string; organisation: string | null; review_date: string; scope_statement: string; conclusion: string }>,
   methodologyId: string,
@@ -114,8 +124,9 @@ export async function generateValuationReport(
         `SELECT vc.included, vc.match_tier, vc.differences, vc.age_days, vc.fx_rate, vc.fx_rate_date, vc.fx_source, vc.basis_amount_base_minor,
                 vc.suspected_outlier, vc.deviation_from_median_pct, vc.rejection_code, vc.rejection_detail,
                 po.source_id, po.source_reference, po.source_url, po.observation_kind, po.observed_at, po.venue, po.amount_minor,
-                po.currency, po.buyers_premium_minor, po.verification_status
+                po.currency, po.buyers_premium_minor, po.verification_status, ds.licence_status
          FROM valuation_comparables vc JOIN price_observations po ON po.id = vc.observation_id
+         JOIN data_sources ds ON ds.id = po.source_id
          WHERE vc.valuation_id = $1 ORDER BY vc.included DESC, po.observed_at DESC`,
         [v.id],
       );
@@ -146,6 +157,7 @@ export async function generateValuationReport(
         assumptions: detail?.assumptions,
         inputsHash: detail?.inputs_hash,
         overrides,
+        unlicensedComparablesUsed: comparables.filter((c) => c.included && c.licence_status === "unlicensed").length,
         comparablesUsed: comparables.filter((c) => c.included),
         comparablesRejected: comparables.filter((c) => !c.included),
       };
@@ -189,6 +201,7 @@ export async function generateValuationReport(
         "Values are expressed in the collection base currency using the documented FX rates shown with each comparable.",
       ],
       limitations: LIMITATIONS,
+      evidenceProvenance: provenanceStatement(assets.reduce((n, a) => n + Number(a.valuation?.unlicensedComparablesUsed ?? 0), 0)),
       assets,
       unvaluedAssets: assets.filter((a) => !a.valuation).map((a) => a.assetRef),
       collectionTotalMinor: total,
@@ -234,7 +247,10 @@ export async function generateInsuranceAdjustmentReport(
     `SELECT l.event_id, l.change, l.quantity, l.previous_value_minor, l.new_value_minor, l.valuation_id,
             a.asset_ref, ci.card_name, ci.set_name, ci.card_number, ci.game,
             v.confidence, v.method_used, v.inputs_hash, v.methodology_version_id, v.valuation_date,
-            (SELECT count(*) FROM valuation_comparables vc WHERE vc.valuation_id = v.id AND vc.included) AS comparables_used
+            (SELECT count(*) FROM valuation_comparables vc WHERE vc.valuation_id = v.id AND vc.included) AS comparables_used,
+            (SELECT count(*) FROM valuation_comparables vc JOIN price_observations po ON po.id = vc.observation_id
+               JOIN data_sources ds ON ds.id = po.source_id
+             WHERE vc.valuation_id = v.id AND vc.included AND ds.licence_status = 'unlicensed') AS unlicensed_comparables_used
      FROM insurance_event_lines l
      JOIN assets a ON a.id = l.asset_id
      JOIN card_identities ci ON ci.id = a.card_identity_id
@@ -300,8 +316,10 @@ export async function generateInsuranceAdjustmentReport(
           method: l.method_used,
           confidence: l.confidence,
           comparablesUsed: l.comparables_used,
+          unlicensedComparablesUsed: l.unlicensed_comparables_used,
           inputsHash: l.inputs_hash,
         })),
+      evidenceProvenance: provenanceStatement(lines.reduce((n, l) => n + Number(l.unlicensed_comparables_used ?? 0), 0)),
       methodology: methodology
         ? { id: methodology.id, name: methodology.name, documentRef: methodology.document_ref, reviewStatement: methodology.reviewStatement }
         : null,

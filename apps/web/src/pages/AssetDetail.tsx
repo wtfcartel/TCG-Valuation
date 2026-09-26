@@ -98,6 +98,7 @@ function ValuationPanel({ valuationId, assetId, currency, onChange }: { valuatio
                 <td>{c.observed_at}</td>
                 <td>
                   {c.venue} <span className="muted small">[{c.source_id}]</span>
+                  {c.licence_status === "unlicensed" && <span className="badge conf-limited">unlicensed / scraped</span>}
                 </td>
                 <td className="small">{c.source_url ? <a href={c.source_url} target="_blank" rel="noreferrer">{c.source_reference}</a> : c.source_reference}</td>
                 <td className="num">{money(c.amount_minor, c.currency)}</td>
@@ -196,6 +197,8 @@ export function AssetDetail({ id, currency }: { id: string; currency: string }) 
   const [panel, setPanel] = useState<"none" | "sell" | "loss" | "grading" | "evidence">("none");
   const [valForm, setValForm] = useState({ purpose: "market", date: today() });
   const [form, setForm] = useState<Any>({});
+  const [ebaySite, setEbaySite] = useState("ebay.com");
+  const [importNote, setImportNote] = useState<string | null>(null);
   const { busy, error, run } = useAction();
 
   const load = useCallback(async () => {
@@ -247,6 +250,35 @@ export function AssetDetail({ id, currency }: { id: string; currency: string }) 
                 Import evidence: {s.name}
               </button>
             ))}
+          <label className={`button ${!held ? "disabled" : ""}`} title="Save an eBay 'Sold items' search results page from your browser (File → Save Page As, HTML only), then choose it here">
+            Import saved eBay sold page
+            <input
+              type="file"
+              accept=".html,.htm,text/html"
+              hidden
+              disabled={!held}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                run(async () => {
+                  const site = /ebay\.com\.au/i.test(file.name) ? "ebay.com.au" : /ebay\.co\.uk/i.test(file.name) ? "ebay.co.uk" : ebaySite;
+                  const r = await api("POST", `/api/assets/${id}/evidence/ebay-page`, { html: await file.text(), site });
+                  setImportNote(
+                    `eBay page: ${r.listingsFound} listings, ${r.matched} matched this card, ${r.inserted} new` +
+                      (r.bestOfferAcceptedRejected ? `, ${r.bestOfferAcceptedRejected} best-offer (price hidden, will be rejected)` : "") +
+                      `. Skipped: ${Object.entries(r.skipped).map(([k, v]) => `${label(k)} ${v}`).join(", ") || "none"}. Stored as UNLICENSED / SCRAPED evidence.`,
+                  );
+                  await load();
+                });
+              }}
+            />
+          </label>
+          <select value={ebaySite} onChange={(e) => setEbaySite(e.target.value)} title="eBay site the saved page came from">
+            {["ebay.com", "ebay.com.au", "ebay.co.uk", "ebay.ca", "ebay.de"].map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+          </select>
           <button disabled={!held} onClick={() => setPanel("evidence")}>Record sale evidence</button>
           <button disabled={!held} onClick={() => setPanel("sell")}>Mark sold</button>
           <button disabled={!held} onClick={() => setPanel("loss")}>Record loss</button>
@@ -377,6 +409,7 @@ export function AssetDetail({ id, currency }: { id: string; currency: string }) 
             <div className="span-all"><button className="primary" disabled={busy}>Save evidence</button></div>
           </form>
         )}
+        {importNote && <div className="note">{importNote}</div>}
         <ErrorNote error={error} />
       </Card>
 
@@ -452,7 +485,10 @@ export function AssetDetail({ id, currency }: { id: string; currency: string }) 
                   <td className="num">{money(o.amount_minor, o.currency)}</td>
                   <td>{o.verification_status}</td>
                   <td>{o.arms_length == null ? "unknown" : o.arms_length ? "yes" : "no"}</td>
-                  <td className="small">{o.source_id}</td>
+                  <td className="small">
+                    {o.source_id}
+                    {o.licence_status === "unlicensed" && <span className="badge conf-limited">unlicensed</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>

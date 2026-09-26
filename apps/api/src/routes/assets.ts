@@ -12,7 +12,8 @@ import { appendInsuranceEvent, onAssetExit, scheduledValues } from "../services/
 import { getAsset, gradingAt, heldQuantity, type GradingRow, type OwnershipRow } from "../services/ledger.js";
 import { getValuation, loadObservations, runValuation, today } from "../services/valuation.js";
 import type { SourcedObservation } from "../sources/types.js";
-import { SourceNotConfiguredError } from "../sources/types.js";
+import { SourceNotConfiguredError, type CardIdentityRow } from "../sources/types.js";
+import { ebayPageToObservations } from "../sources/ebay-sold.js";
 import { assertAssetAccess, currency, isoDate, minor, parse, user, uuid, type AppContext } from "./context.js";
 
 const idParams = z.object({ id: uuid });
@@ -341,6 +342,36 @@ export async function assetRoutes(app: FastifyInstance, ctx: AppContext) {
     const stored = await storeObservations(ctx.pool, "csv_import", asset.card_identity_id, observations, u.id);
     await audit(ctx.pool, u.id, "evidence.csv_imported", "asset", id, { rows: rows.length, ...stored }, req.id);
     return reply.code(201).send({ rows: rows.length, ...stored });
+  });
+
+  // Saved eBay "Sold items" result page (HTML) → UNLICENSED/SCRAPED completed-sale evidence.
+  app.post("/api/assets/:id/evidence/ebay-page", async (req, reply) => {
+    const u = user(req);
+    const { id } = parse(idParams, req.params);
+    await assertAssetAccess(ctx.pool, u, id);
+    const b = parse(
+      z.object({
+        html: z.string().min(100).max(8_000_000),
+        site: z.enum(["ebay.com", "ebay.com.au", "ebay.co.uk", "ebay.ca", "ebay.de"]).default("ebay.com"),
+      }),
+      req.body,
+    );
+    const fallbackCurrency = { "ebay.com": "USD", "ebay.com.au": "AUD", "ebay.co.uk": "GBP", "ebay.ca": "CAD", "ebay.de": "EUR" }[b.site];
+    const asset = await getAsset(ctx.pool, id);
+    const identity = await one<CardIdentityRow>(ctx.pool, `SELECT * FROM card_identities WHERE id = $1`, [asset.card_identity_id]);
+    const parsed = ebayPageToObservations(b.html, identity!, { site: b.site, fallbackCurrency });
+    if (parsed.listingsFound === 0) throw badRequest("No eBay result listings found in this page. Save the full 'Sold items' search results page.");
+    const stored = await storeObservations(ctx.pool, "ebay_sold_scrape", asset.card_identity_id, parsed.observations, u.id);
+    const bestOffer = parsed.observations.filter((o) => o.verificationStatus === "unverified").length;
+    await audit(ctx.pool, u.id, "evidence.ebay_page_imported", "asset", id, { site: b.site, listingsFound: parsed.listingsFound, matched: parsed.observations.length, skipped: parsed.skipped, ...stored }, req.id);
+    return reply.code(201).send({
+      licenceStatus: "unlicensed",
+      listingsFound: parsed.listingsFound,
+      matched: parsed.observations.length,
+      bestOfferAcceptedRejected: bestOffer,
+      skipped: parsed.skipped,
+      ...stored,
+    });
   });
 
   // ───────────── Valuations ─────────────

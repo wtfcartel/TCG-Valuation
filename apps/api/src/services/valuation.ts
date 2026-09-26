@@ -63,7 +63,7 @@ export async function currentMethodology(db: Queryable, onDate: string) {
 export async function loadObservations(db: Queryable, cardIdentityId: string, ownerUserId: string): Promise<ObservationRow[]> {
   return many<ObservationRow>(
     db,
-    `SELECT po.*, ci.game, ci.product_type, ci.set_code, ci.card_number, ci.language, ci.edition, ci.variant
+    `SELECT po.*, ds.licence_status, ci.game, ci.product_type, ci.set_code, ci.card_number, ci.language, ci.edition, ci.variant
      FROM price_observations po
      JOIN card_identities ci ON ci.id = po.card_identity_id
      JOIN data_sources ds ON ds.id = po.source_id
@@ -268,8 +268,9 @@ export async function getValuation(db: Queryable, valuationId: string) {
     db,
     `SELECT vc.*, po.source_id, po.source_reference, po.source_url, po.observation_kind, po.observed_at, po.venue, po.amount_minor,
             po.currency, po.buyers_premium_minor, po.grading_company, po.grade, po.condition, po.verification_status,
-            po.arms_length, po.fetched_at
+            po.arms_length, po.fetched_at, ds.licence_status
      FROM valuation_comparables vc JOIN price_observations po ON po.id = vc.observation_id
+     JOIN data_sources ds ON ds.id = po.source_id
      WHERE vc.valuation_id = $1
      ORDER BY vc.included DESC, po.observed_at DESC`,
     [valuationId],

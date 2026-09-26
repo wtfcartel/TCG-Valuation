@@ -7,7 +7,7 @@ export interface SourceDefinition {
   id: string;
   name: string;
   provides: Array<"catalogue" | "completed_sale" | "asking_price" | "price_guide" | "population" | "fx">;
-  licenceStatus: "open" | "licensed" | "user_supplied" | "restricted" | "synthetic";
+  licenceStatus: "open" | "licensed" | "user_supplied" | "restricted" | "synthetic" | "unlicensed";
   licenceNotes: string;
   reliabilityTier: 1 | 2 | 3;
 }
@@ -29,6 +29,16 @@ export const SOURCE_DEFINITIONS: SourceDefinition[] = [
     licenceStatus: "user_supplied",
     licenceNotes:
       "User-supplied export of auction results (e.g. their own auction-house invoices or a licensed dataset). The user warrants they may use the data.",
+    reliabilityTier: 2,
+  },
+  {
+    id: "ebay_sold_scrape",
+    name: "eBay sold listings (scraped)",
+    provides: ["completed_sale"],
+    licenceStatus: "unlicensed",
+    licenceNotes:
+      "Parsed from eBay 'Sold items' result pages without a data licence from eBay. Collection this way is contrary to the eBay User Agreement; " +
+      "evidence is labelled UNLICENSED / SCRAPED in every report. Best-offer sales are recorded but rejected because the accepted price is hidden.",
     reliabilityTier: 2,
   },
   {

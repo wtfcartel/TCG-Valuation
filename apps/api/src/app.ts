@@ -18,7 +18,7 @@ import { valuationRoutes } from "./routes/valuations.js";
 import { createRegistry, type SourceRegistry } from "./sources/registry.js";
 
 export async function buildApp(opts: { config: Config; pool: Db; sources?: SourceRegistry; logger?: boolean }): Promise<FastifyInstance> {
-  const app = Fastify({ logger: opts.logger ?? false, bodyLimit: 5 * 1024 * 1024 });
+  const app = Fastify({ logger: opts.logger ?? false, bodyLimit: 10 * 1024 * 1024 });
   const ctx: AppContext = {
     config: opts.config,
     pool: opts.pool,

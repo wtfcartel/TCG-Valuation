@@ -24,6 +24,7 @@
 | Risk | Mitigation |
 |---|---|
 | **Scraping** marketplaces (eBay, Cardmarket, TCGplayer, PriceCharting, PSA APR, auction houses) breaches their terms. In the UK/EU, bulk extraction can also infringe the sui generis **database right**. | Cardcore contains **no scrapers**. Automated evidence comes only from adapters backed by a licence or an open API. Restricted sources are registered as `restricted` and fail closed. |
+| **Accepted risk: unlicensed eBay sold data** (`ebay_sold_scrape`) | Owner decision 2026-09-26 to use it and respond to any cease-and-desist when received. Mitigations: public pages only, saved-page import (no automated fetcher yet), provenance disclosed in every report, and the source can be switched off without code changes. Replace it with the eBay Marketplace Insights API or a licensed vendor when available. |
 | Redistribution of licensed prices in reports and insurer payloads | Individual sale facts cited as evidence, with source and URL, are low risk. Redistributing a vendor's aggregate price guide usually requires permission. Price guides are stored as `price_guide` and are **never** placed in insurer evidence. Confirm redistribution rights in each data licence **(verify)**. |
 | User-supplied evidence | Users warrant they may use the data they import. Their entries are scoped to their own valuations and are never shared across tenants. |
 

@@ -309,6 +309,33 @@ describe("Cardcore Phase 1 flow", () => {
     }
   });
 
+  it("imports a saved eBay sold page as unlicensed evidence and discloses it in reports", async () => {
+    const fmt = (d: string) => {
+      const [y, m, day] = d.split("-");
+      const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(m) - 1];
+      return `Sold  ${mon} ${Number(day)}, ${y}`;
+    };
+    const item = (id: string, daysAgo: number, title: string, price: string) =>
+      `<li class="s-item"><span class="s-item__caption--signal POSITIVE"><span>${fmt(addDays(today(), -daysAgo))}</span></span>` +
+      `<a href="https://www.ebay.com/itm/${id}"><div class="s-item__title"><span>${title}</span></div></a>` +
+      `<span class="s-item__price"><span class="POSITIVE">${price}</span></span></li>`;
+    const html = `<html><body><ul class="srp-results">${[
+      item("400000000001", 1, "Shanks OP01-120 Japanese Alt Art Romance Dawn NM", "$171.00"),
+      item("400000000002", 2, "One Piece Shanks OP01-120 Japanese Parallel NM", "$169.50"),
+      item("400000000003", 3, "Shanks OP01-120 Japanese Alt Art NM", "$168.00"),
+      item("400000000004", 4, "Shanks OP01-120 English Alt Art", "$90.00"),
+    ].join("")}</ul></body></html>`;
+    const imp = await call("POST", `/api/assets/${asset2Id}/evidence/ebay-page`, token, { html });
+    expect(imp.status).toBe(201);
+    expect(imp.body).toMatchObject({ licenceStatus: "unlicensed", listingsFound: 4, matched: 3, inserted: 3 });
+    expect(imp.body.skipped).toEqual({ language_mismatch: 1 });
+
+    const v = await call("POST", `/api/assets/${asset2Id}/valuations`, token, { purpose: "market" });
+    const used = v.body.comparables.filter((c: { included: boolean }) => c.included);
+    expect(used.every((c: { source_id: string; licence_status: string }) => c.source_id === "ebay_sold_scrape" && c.licence_status === "unlicensed")).toBe(true);
+    expect(v.body.unit_value_minor).toBe(16_950);
+  });
+
   it("generates an immutable, hashed valuation report and PDF", async () => {
     const vr = await call("POST", `/api/assets/${asset2Id}/valuations`, token, { purpose: "market" });
     expect(vr.status).toBe(201);
@@ -316,6 +343,7 @@ describe("Cardcore Phase 1 flow", () => {
     expect(rep.status).toBe(201);
     expect(rep.body.sha256).toMatch(/^[0-9a-f]{64}$/);
     expect(rep.body.payload.methodology.reviewStatement).toMatch(/has not been independently reviewed/);
+    expect(rep.body.payload.evidenceProvenance).toMatch(/UNLICENSED \/ SCRAPED EVIDENCE: 3 comparable/);
     const json = await call("GET", `/api/reports/${rep.body.id}`, token);
     expect(json.body.integrity.verified).toBe(true);
     const pdf = await call("GET", `/api/reports/${rep.body.id}/pdf`, token);
