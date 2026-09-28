@@ -6,7 +6,10 @@ import { startEcbScheduler } from "./services/ecb.js";
 const config = loadConfig();
 const pool = createPool(config.databaseUrl);
 await migrate(pool, config);
-const app = await buildApp({ config, pool, logger: true });
+if (config.adminEmails.length) {
+  await pool.query(`UPDATE users SET role = 'admin' WHERE email = ANY($1) AND role <> 'admin'`, [config.adminEmails]);
+}
+const app = await buildApp({ config, pool, logger: true, trustProxy: true });
 if (config.enableEcbFx) startEcbScheduler(pool, app.log);
 
 const shutdown = async () => {

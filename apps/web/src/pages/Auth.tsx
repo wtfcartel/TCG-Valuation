@@ -57,3 +57,43 @@ export function AuthPage({ onAuthed }: { onAuthed: () => void }) {
     </div>
   );
 }
+
+/** One-time password reset from a link issued by an administrator (or an emailed link, once email is configured). */
+export function ResetPassword({ token }: { token: string }) {
+  const [password, setPassword] = useState("");
+  const [done, setDone] = useState(false);
+  const { busy, error, run } = useAction();
+  return (
+    <div className="auth">
+      <form
+        className="card auth-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run(async () => {
+            await api("POST", "/api/auth/password-reset/confirm", { token, newPassword: password });
+            setDone(true);
+          });
+        }}
+      >
+        <h1>Reset password</h1>
+        {done ? (
+          <>
+            <p>Your password has been changed.</p>
+            <a href="#/dashboard">Sign in</a>
+          </>
+        ) : (
+          <>
+            <label>
+              New password
+              <input type="password" required minLength={10} value={password} onChange={(e) => setPassword(e.target.value)} />
+            </label>
+            <ErrorNote error={error} />
+            <button className="primary" disabled={busy}>
+              Set password
+            </button>
+          </>
+        )}
+      </form>
+    </div>
+  );
+}

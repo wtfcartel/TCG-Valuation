@@ -138,3 +138,5 @@ pre.factors { background: var(--bg); padding: 0.7rem; border-radius: 7px; overfl
   .topbar { gap: 0.6rem; }
   .who .muted { display: none; }
 }
+.table-scroll.audit { max-height: 360px; overflow-y: auto; }
+.table.sources td:first-child { white-space: normal; min-width: 280px; }

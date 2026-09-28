@@ -104,6 +104,55 @@ export async function valuationRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get("/api/sources", async () => ctx.sources.list());
 
+  // ───────────── Independent methodology review (admin) ─────────────
+  // A review validates the methodology only; reports say so explicitly (see services/reports.ts).
+
+  app.get("/api/reviewers", async (req) => {
+    user(req);
+    return many(ctx.pool, `SELECT * FROM reviewers ORDER BY created_at`);
+  });
+
+  app.post("/api/reviewers", async (req, reply) => {
+    const u = requireRole(req, "admin");
+    const b = parse(
+      z.object({ name: z.string().trim().min(2).max(200), credentials: z.string().trim().min(2).max(200), organisation: z.string().trim().max(200).nullable().default(null) }),
+      req.body,
+    );
+    const row = await one<{ id: string }>(
+      ctx.pool,
+      `INSERT INTO reviewers (name, credentials, organisation) VALUES ($1,$2,$3) RETURNING *`,
+      [b.name, b.credentials, b.organisation],
+    );
+    await audit(ctx.pool, u.id, "reviewer.created", "reviewer", row!.id, b, req.id);
+    return reply.code(201).send(row);
+  });
+
+  app.post("/api/methodology/:id/reviews", async (req, reply) => {
+    const u = requireRole(req, "admin");
+    const { id } = parse(z.object({ id: z.string().min(1) }), req.params);
+    const b = parse(
+      z.object({
+        reviewerId: z.string().uuid(),
+        reviewDate: isoDate,
+        scopeStatement: z.string().trim().min(20).max(4000),
+        conclusion: z.string().trim().min(10).max(4000),
+      }),
+      req.body,
+    );
+    const version = await one(ctx.pool, `SELECT 1 FROM methodology_versions WHERE id = $1`, [id]);
+    if (!version) throw notFound("Methodology version");
+    const reviewer = await one(ctx.pool, `SELECT 1 FROM reviewers WHERE id = $1`, [b.reviewerId]);
+    if (!reviewer) throw notFound("Reviewer");
+    const row = await one<{ id: string }>(
+      ctx.pool,
+      `INSERT INTO methodology_reviews (methodology_version_id, reviewer_id, review_date, scope_statement, conclusion)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [id, b.reviewerId, b.reviewDate, b.scopeStatement, b.conclusion],
+    );
+    await audit(ctx.pool, u.id, "methodology_review.recorded", "methodology_version", id, b, req.id);
+    return reply.code(201).send(row);
+  });
+
   // Plan/quota for an API-key source (currently PokeTrace). Never echoes the key.
   app.get("/api/sources/:id/status", async (req) => {
     user(req);
@@ -121,7 +170,27 @@ export async function valuationRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get("/api/audit", async (req) => {
     const u = user(req);
-    const q = parse(z.object({ entityType: z.string().optional(), entityId: z.string().optional(), limit: z.coerce.number().int().max(500).default(100) }), req.query);
+    const q = parse(
+      z.object({
+        entityType: z.string().optional(),
+        entityId: z.string().optional(),
+        assetId: z.string().uuid().optional(),
+        limit: z.coerce.number().int().min(1).max(500).default(100),
+      }),
+      req.query,
+    );
+    if (q.assetId) {
+      // Everything about one asset: the asset's own events plus valuations and insurance events that reference it.
+      await assertAssetAccess(ctx.pool, u, q.assetId);
+      return many(
+        ctx.pool,
+        `SELECT * FROM audit_events
+         WHERE (entity_type = 'asset' AND entity_id = $1) OR detail->>'assetId' = $1
+            OR (entity_type = 'valuation' AND entity_id IN (SELECT id::text FROM valuations WHERE asset_id = $1::uuid))
+         ORDER BY id DESC LIMIT $2`,
+        [q.assetId, q.limit],
+      );
+    }
     return many(
       ctx.pool,
       `SELECT * FROM audit_events WHERE ($1::text IS NULL OR entity_type = $1) AND ($2::text IS NULL OR entity_id = $2)

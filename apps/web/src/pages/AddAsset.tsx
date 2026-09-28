@@ -124,11 +124,83 @@ function NewIdentityForm({ onCreated }: { onCreated: (i: Identity) => void }) {
   );
 }
 
+interface Candidate {
+  externalId: string;
+  cardName: string;
+  setCode: string;
+  cardNumber: string | null;
+  imageUrl: string | null;
+}
+
+/** Search the open TCGdex catalogue and import the chosen printing into the local catalogue. */
+function TcgdexSearch({ onImported }: { onImported: (i: Identity) => void }) {
+  const [q, setQ] = useState("");
+  const [language, setLanguage] = useState("en");
+  const [results, setResults] = useState<Candidate[]>([]);
+  const [pick, setPick] = useState<{ id: string; edition: string; variant: string } | null>(null);
+  const { busy, error, run } = useAction();
+  return (
+    <div className="stack">
+      <form
+        className="form-row"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run(async () => setResults(await api("GET", `/api/catalog/remote?source=tcgdex&q=${encodeURIComponent(q)}&language=${language}`)));
+        }}
+      >
+        <input required minLength={2} placeholder="Card name, e.g. Charizard" value={q} onChange={(e) => setQ(e.target.value)} />
+        <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+          {["en", "ja", "fr", "de", "it", "es", "pt"].map((l) => (
+            <option key={l}>{l}</option>
+          ))}
+        </select>
+        <button className="primary" disabled={busy}>Search</button>
+      </form>
+      <ErrorNote error={error} />
+      <ul className="results">
+        {results.map((r) => (
+          <li key={r.externalId} className={pick?.id === r.externalId ? "selected" : ""} onClick={() => setPick({ id: r.externalId, edition: "", variant: "holo" })}>
+            <strong>{r.cardName}</strong> <span className="muted">{r.setCode} #{r.cardNumber}</span> <span className="small muted">({r.externalId})</span>
+          </li>
+        ))}
+      </ul>
+      {pick && (
+        <form
+          className="form-row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            run(async () => {
+              const res = await api<{ identity: Identity }>("POST", "/api/catalog/import", {
+                source: "tcgdex",
+                externalId: pick.id,
+                language,
+                edition: pick.edition || null,
+                variant: pick.variant || null,
+              });
+              onImported(res.identity);
+            });
+          }}
+        >
+          <span className="small">Printing for {pick.id}:</span>
+          <input placeholder="Edition (1st, unlimited…)" value={pick.edition} onChange={(e) => setPick({ ...pick, edition: e.target.value })} />
+          <select value={pick.variant} onChange={(e) => setPick({ ...pick, variant: e.target.value })}>
+            {["normal", "holo", "reverse_holo", "alt_art", "full_art", "secret_rare"].map((v) => (
+              <option key={v} value={v}>{label(v)}</option>
+            ))}
+          </select>
+          <button className="primary" disabled={busy}>Import &amp; select</button>
+        </form>
+      )}
+      <p className="muted small">TCGdex card data is MIT-licensed; artwork and trademarks belong to their owners.</p>
+    </div>
+  );
+}
+
 export function AddAsset({ collection }: { collection: { id: string; base_currency: string } }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Identity[]>([]);
   const [selected, setSelected] = useState<Identity | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [mode, setMode] = useState<"local" | "tcgdex" | "create">("local");
   const [f, setF] = useState({
     quantity: "1",
     acquisitionDate: today(),
@@ -179,15 +251,28 @@ export function AddAsset({ collection }: { collection: { id: string; base_curren
   return (
     <div className="stack">
       <h1>Add asset</h1>
-      <Card title="1 · Select the card or product" actions={<button onClick={() => setCreating(!creating)}>{creating ? "Search instead" : "Not listed? Create"}</button>}>
-        {creating ? (
+      <Card
+        title="1 · Select the card or product"
+        actions={
+          <div className="button-row">
+            {(["local", "tcgdex", "create"] as const).map((m) => (
+              <button key={m} className={mode === m ? "primary" : ""} onClick={() => setMode(m)}>
+                {m === "local" ? "My catalogue" : m === "tcgdex" ? "Search TCGdex (Pokémon)" : "Create manually"}
+              </button>
+            ))}
+          </div>
+        }
+      >
+        {mode === "create" && (
           <NewIdentityForm
             onCreated={(i) => {
               setSelected(i);
-              setCreating(false);
+              setMode("local");
             }}
           />
-        ) : (
+        )}
+        {mode === "tcgdex" && <TcgdexSearch onImported={(i) => { setSelected(i); setMode("local"); }} />}
+        {mode === "local" && (
           <>
             <input className="search" placeholder="Search by name, set or number…" value={q} onChange={(e) => setQ(e.target.value)} />
             <ul className="results">
@@ -199,7 +284,12 @@ export function AddAsset({ collection }: { collection: { id: string; base_curren
                   </div>
                 </li>
               ))}
-              {!results.length && <li className="muted">No matches in the catalogue.</li>}
+              {!results.length && (
+                <li className="muted">
+                  No matches in your catalogue. Try <button className="link" onClick={() => setMode("tcgdex")}>TCGdex</button> or{" "}
+                  <button className="link" onClick={() => setMode("create")}>create it manually</button>.
+                </li>
+              )}
             </ul>
           </>
         )}

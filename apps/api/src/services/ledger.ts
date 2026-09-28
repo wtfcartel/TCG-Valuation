@@ -82,7 +82,7 @@ export interface InsuranceLineRow {
 
 const ASSET_SELECT = `
   SELECT a.*, ci.game, ci.product_type, ci.category, ci.set_code, ci.set_name, ci.card_number, ci.card_name,
-         ci.language, ci.edition, ci.variant, ci.rarity
+         ci.language, ci.edition, ci.variant, ci.rarity, ci.external_refs
   FROM assets a JOIN card_identities ci ON ci.id = a.card_identity_id`;
 
 export async function getAsset(db: Queryable, assetId: string): Promise<AssetRow & { owner_user_id: string; base_currency: string }> {

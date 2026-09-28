@@ -415,5 +415,9 @@ describe("Cardcore Phase 1 flow", () => {
     expect(actions).toContain("asset.created");
     expect(actions).toContain("asset.disposed");
     expect(actions).toContain("evidence.imported");
+    const full = await call("GET", `/api/audit?assetId=${assetId}`, token);
+    const fullActions = full.body.map((a: { action: string }) => a.action);
+    expect(fullActions).toContain("valuation.created");
+    expect(fullActions).toContain("valuation.overridden");
   });
 });

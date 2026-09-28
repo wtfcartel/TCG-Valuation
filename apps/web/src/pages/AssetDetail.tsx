@@ -189,6 +189,82 @@ function ValuationPanel({ valuationId, assetId, currency, onChange }: { valuatio
   );
 }
 
+/** Link the catalogue entry to external sources (e.g. the exact PokeTrace printing when a search is ambiguous). */
+function CatalogueLinks({ identityId, refs, onSaved }: { identityId: string; refs: Record<string, string>; onSaved: () => void }) {
+  const [poketrace, setPoketrace] = useState(refs.poketrace ?? "");
+  const { busy, error, run } = useAction();
+  return (
+    <Card title="Catalogue links">
+      <table className="table compact">
+        <tbody>
+          {Object.entries(refs).map(([k, v]) => (
+            <tr key={k}>
+              <td>{k}</td>
+              <td className="mono small">{v}</td>
+            </tr>
+          ))}
+          {!Object.keys(refs).length && (
+            <tr>
+              <td className="muted">No external links yet.</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+      <form
+        className="form-row"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run(async () => {
+            await api("PATCH", `/api/catalog/cards/${identityId}/external-refs`, { poketrace: poketrace.trim() });
+            onSaved();
+          });
+        }}
+      >
+        <input required placeholder="PokeTrace card ID" value={poketrace} onChange={(e) => setPoketrace(e.target.value)} />
+        <button disabled={busy}>Save PokeTrace link</button>
+      </form>
+      <p className="muted small">Needed only when a PokeTrace import reports several matching printings; paste the ID it lists.</p>
+      <ErrorNote error={error} />
+    </Card>
+  );
+}
+
+function AuditTrail({ assetId }: { assetId: string }) {
+  const [rows, setRows] = useState<Any[] | null>(null);
+  return (
+    <Card title="Audit trail">
+      {rows == null ? (
+        <button onClick={() => api<Any[]>("GET", `/api/audit?assetId=${assetId}&limit=200`).then(setRows)}>Show audit trail</button>
+      ) : (
+        <div className="table-scroll audit">
+          <table className="table compact">
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td className="small">{r.occurred_at.slice(0, 19).replace("T", " ")}</td>
+                  <td>{label(r.action)}</td>
+                  <td className="small muted">
+                    <details>
+                      <summary>detail</summary>
+                      <pre className="factors">{JSON.stringify(r.detail, null, 2)}</pre>
+                    </details>
+                  </td>
+                </tr>
+              ))}
+              {!rows.length && (
+                <tr>
+                  <td className="muted">No audit events.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="muted small">Every change is recorded here and can never be edited or deleted.</p>
+    </Card>
+  );
+}
+
 export function AssetDetail({ id, currency }: { id: string; currency: string }) {
   const [a, setA] = useState<Any | null>(null);
   const [evidence, setEvidence] = useState<Any[]>([]);
@@ -495,6 +571,11 @@ export function AssetDetail({ id, currency }: { id: string; currency: string }) 
           </table>
         </div>
       </Card>
+
+      <div className="grid2">
+        <CatalogueLinks identityId={a.card_identity_id} refs={a.external_refs ?? {}} onSaved={load} />
+        <AuditTrail assetId={id} />
+      </div>
 
       {a.photos.length > 0 && (
         <Card title="Photographs">

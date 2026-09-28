@@ -6,13 +6,17 @@ import { AddAsset } from "./pages/AddAsset";
 import { AssetDetail } from "./pages/AssetDetail";
 import { Insurance } from "./pages/Insurance";
 import { Reports } from "./pages/Reports";
+import { Settings } from "./pages/Settings";
+import { ResetPassword } from "./pages/Auth";
 
 export type Route =
   | { name: "dashboard" }
   | { name: "add" }
   | { name: "asset"; id: string }
   | { name: "insurance" }
-  | { name: "reports" };
+  | { name: "reports" }
+  | { name: "settings" }
+  | { name: "reset"; token: string };
 
 export interface Me {
   id: string;
@@ -26,12 +30,13 @@ export interface Me {
 function parseHash(): Route {
   const [name, id] = location.hash.replace(/^#\/?/, "").split("/");
   if (name === "asset" && id) return { name: "asset", id };
-  if (name === "add" || name === "insurance" || name === "reports") return { name };
+  if (name === "reset" && id) return { name: "reset", token: id };
+  if (name === "add" || name === "insurance" || name === "reports" || name === "settings") return { name };
   return { name: "dashboard" };
 }
 
 export function navigate(route: Route): void {
-  location.hash = route.name === "asset" ? `/asset/${route.id}` : `/${route.name}`;
+  location.hash = route.name === "asset" ? `/asset/${route.id}` : route.name === "reset" ? `/reset/${route.token}` : `/${route.name}`;
 }
 
 export function App() {
@@ -55,6 +60,7 @@ export function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, [loadMe]);
 
+  if (route.name === "reset") return <ResetPassword token={route.token} />;
   if (loading) return <div className="center muted">Loading…</div>;
   if (!me) return <AuthPage onAuthed={loadMe} />;
   const collection = me.collections[0]!;
@@ -64,6 +70,7 @@ export function App() {
     ["add", "Add asset"],
     ["insurance", "Insurance"],
     ["reports", "Reports"],
+    ["settings", "Settings"],
   ];
 
   return (
@@ -96,6 +103,7 @@ export function App() {
         {route.name === "asset" && <AssetDetail id={route.id} currency={collection.base_currency} />}
         {route.name === "insurance" && <Insurance collection={collection} />}
         {route.name === "reports" && <Reports collection={collection} />}
+        {route.name === "settings" && <Settings me={me} />}
       </main>
     </div>
   );

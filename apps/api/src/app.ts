@@ -15,10 +15,12 @@ import type { AppContext } from "./routes/context.js";
 import { insuranceRoutes } from "./routes/insurance.js";
 import { reportRoutes } from "./routes/reports.js";
 import { valuationRoutes } from "./routes/valuations.js";
+import { adminRoutes } from "./routes/admin.js";
 import { createRegistry, type SourceRegistry } from "./sources/registry.js";
 
-export async function buildApp(opts: { config: Config; pool: Db; sources?: SourceRegistry; logger?: boolean }): Promise<FastifyInstance> {
-  const app = Fastify({ logger: opts.logger ?? false, bodyLimit: 10 * 1024 * 1024 });
+export async function buildApp(opts: { config: Config; pool: Db; sources?: SourceRegistry; logger?: boolean; trustProxy?: boolean }): Promise<FastifyInstance> {
+  // trustProxy: behind a hosting provider's load balancer, req.ip must come from X-Forwarded-For for rate limiting.
+  const app = Fastify({ logger: opts.logger ?? false, bodyLimit: 10 * 1024 * 1024, trustProxy: opts.trustProxy ?? false });
   const ctx: AppContext = {
     config: opts.config,
     pool: opts.pool,
@@ -31,12 +33,35 @@ export async function buildApp(opts: { config: Config; pool: Db; sources?: Sourc
   app.addHook("onRequest", async (req) => {
     const header = req.headers.authorization;
     if (header?.startsWith("Bearer ")) {
+      let claims;
       try {
-        req.user = await ctx.tokens.verify(header.slice(7));
+        claims = await ctx.tokens.verify(header.slice(7));
       } catch {
         throw new HttpError(401, "Invalid or expired token", "unauthorized");
       }
+      // The database is authoritative: role changes apply immediately, and a password change/reset
+      // (which bumps session_version) revokes every earlier session.
+      const row = await ctx.pool.query<{ role: "collector" | "valuer" | "admin"; session_version: number }>(
+        `SELECT role, session_version FROM users WHERE id = $1`,
+        [claims.id],
+      );
+      const u = row.rows[0];
+      if (!u || claims.sessionVersion !== u.session_version) throw new HttpError(401, "Session expired; please sign in again", "unauthorized");
+      req.user = { id: claims.id, email: claims.email, role: u.role };
     }
+  });
+
+  app.addHook("onSend", async (req, reply) => {
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "DENY");
+    reply.header("Referrer-Policy", "no-referrer");
+    reply.header("Permissions-Policy", "camera=(self), geolocation=(), microphone=()");
+    reply.header(
+      "Content-Security-Policy",
+      "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+    );
+    if (process.env.NODE_ENV === "production") reply.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    if (req.url.startsWith("/api/")) reply.header("Cache-Control", "no-store");
   });
 
   app.setErrorHandler((error: Error, req, reply) => {
@@ -67,6 +92,7 @@ export async function buildApp(opts: { config: Config; pool: Db; sources?: Sourc
   await valuationRoutes(app, ctx);
   await insuranceRoutes(app, ctx);
   await reportRoutes(app, ctx);
+  await adminRoutes(app, ctx);
 
   const webDir = opts.config.webDistDir ? resolve(opts.config.webDistDir) : null;
   if (webDir && existsSync(webDir)) {

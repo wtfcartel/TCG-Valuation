@@ -32,8 +32,8 @@ export class TokenService {
     this.key = new TextEncoder().encode(secret);
   }
 
-  sign(user: AuthUser): Promise<string> {
-    return new SignJWT({ email: user.email, role: user.role })
+  sign(user: AuthUser, sessionVersion = 0): Promise<string> {
+    return new SignJWT({ email: user.email, role: user.role, sv: sessionVersion })
       .setProtectedHeader({ alg: "HS256" })
       .setSubject(user.id)
       .setIssuedAt()
@@ -41,9 +41,9 @@ export class TokenService {
       .sign(this.key);
   }
 
-  async verify(token: string): Promise<AuthUser> {
+  async verify(token: string): Promise<AuthUser & { sessionVersion: number }> {
     const { payload } = await jwtVerify(token, this.key, { algorithms: ["HS256"] });
-    return { id: String(payload.sub), email: String(payload.email), role: payload.role as AuthUser["role"] };
+    return { id: String(payload.sub), email: String(payload.email), role: payload.role as AuthUser["role"], sessionVersion: Number(payload.sv ?? 0) };
   }
 }
 
@@ -62,4 +62,36 @@ export function requireRole(req: FastifyRequest, ...roles: AuthUser["role"][]): 
   const u = requireUser(req);
   if (!roles.includes(u.role)) throw new HttpError(403, `Requires role: ${roles.join(" or ")}`, "forbidden");
   return u;
+}
+
+/**
+ * Fixed-window attempt limiter (in memory, per process). Suitable for a single instance; use a shared
+ * store (e.g. Redis/Postgres) if the API is scaled horizontally.
+ */
+export class AttemptLimiter {
+  private readonly hits = new Map<string, { count: number; resetAt: number }>();
+  constructor(
+    private readonly max: number,
+    private readonly windowMs: number,
+  ) {}
+
+  check(key: string): void {
+    const now = Date.now();
+    const entry = this.hits.get(key);
+    if (entry && entry.resetAt > now && entry.count >= this.max) {
+      throw new HttpError(429, `Too many attempts; try again in ${Math.ceil((entry.resetAt - now) / 60000)} minute(s)`, "rate_limited");
+    }
+  }
+
+  fail(key: string): void {
+    const now = Date.now();
+    const entry = this.hits.get(key);
+    if (!entry || entry.resetAt <= now) this.hits.set(key, { count: 1, resetAt: now + this.windowMs });
+    else entry.count += 1;
+    if (this.hits.size > 50_000) for (const [k, v] of this.hits) if (v.resetAt <= now) this.hits.delete(k);
+  }
+
+  reset(key: string): void {
+    this.hits.delete(key);
+  }
 }
