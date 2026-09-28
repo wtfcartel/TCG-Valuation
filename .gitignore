@@ -5,3 +5,5 @@ coverage/
 *.log
 data/
 apps/api/storage/
+test-results/
+playwright-report/

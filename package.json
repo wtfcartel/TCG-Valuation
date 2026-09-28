@@ -2,7 +2,7 @@
   "name": "cardcore",
   "private": true,
   "version": "0.1.0",
-  "description": "Cardcore — TCG collection valuation & insurance ledger",
+  "description": "Cardcore \u2014 TCG collection valuation & insurance ledger",
   "type": "module",
   "workspaces": [
     "packages/engine",
@@ -10,15 +10,19 @@
     "apps/web"
   ],
   "scripts": {
-    "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p e2e/tsconfig.json --noEmit",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "dev:api": "npm run dev -w @cardcore/api",
     "dev:web": "npm run dev -w @cardcore/web",
     "migrate": "npm run migrate -w @cardcore/api",
-    "seed": "npm run seed -w @cardcore/api"
+    "seed": "npm run seed -w @cardcore/api",
+    "test:e2e": "playwright test -c e2e/playwright.config.ts"
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
   }
 }
