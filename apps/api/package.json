@@ -6,11 +6,12 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
-    "build": "esbuild src/server.ts src/migrate.ts src/seed.ts --bundle --platform=node --format=esm --target=node22 --outdir=dist --packages=external --alias:@cardcore/engine=../../packages/engine/src/index.ts",
+    "build": "esbuild src/server.ts src/migrate.ts src/seed.ts src/create-admin.ts --bundle --platform=node --format=esm --target=node22 --outdir=dist --packages=external --alias:@cardcore/engine=../../packages/engine/src/index.ts",
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/seed.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "create-admin": "tsx src/create-admin.ts"
   },
   "dependencies": {
     "@cardcore/engine": "0.1.0",

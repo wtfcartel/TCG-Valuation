@@ -76,11 +76,12 @@ const METHODOLOGY_SUMMARY =
 export async function ensureReferenceData(pool: pg.Pool, opts: { poketraceCommercialLicence?: boolean } = {}): Promise<void> {
   for (const s of sourceDefinitions(opts)) {
     await pool.query(
-      `INSERT INTO data_sources (id, name, provides, licence_status, licence_notes, reliability_tier)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO data_sources (id, name, provides, licence_status, licence_notes, reliability_tier, owner_scoped)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, provides = EXCLUDED.provides,
-         licence_status = EXCLUDED.licence_status, licence_notes = EXCLUDED.licence_notes, reliability_tier = EXCLUDED.reliability_tier`,
-      [s.id, s.name, s.provides, s.licenceStatus, s.licenceNotes, s.reliabilityTier],
+         licence_status = EXCLUDED.licence_status, licence_notes = EXCLUDED.licence_notes,
+         reliability_tier = EXCLUDED.reliability_tier, owner_scoped = EXCLUDED.owner_scoped`,
+      [s.id, s.name, s.provides, s.licenceStatus, s.licenceNotes, s.reliabilityTier, s.ownerScoped ?? false],
     );
   }
   for (const m of METHODOLOGY_VERSIONS) {

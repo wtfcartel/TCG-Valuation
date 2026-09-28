@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { buildApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { createPool, migrate, type Db } from "../src/db.js";
+import { promoteToAdmin } from "../src/services/admin.js";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL ?? "postgres://cardcore:cardcore@localhost:5432/cardcore_test";
 let app: FastifyInstance;
@@ -23,7 +24,7 @@ beforeAll(async () => {
   pool = createPool(DATABASE_URL);
   await pool.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
   await migrate(pool);
-  const config = { ...loadConfig({ NODE_ENV: "test" } as NodeJS.ProcessEnv), databaseUrl: DATABASE_URL, adminEmails: ["boss@example.com"] };
+  const config = { ...loadConfig({ NODE_ENV: "test" } as NodeJS.ProcessEnv), databaseUrl: DATABASE_URL };
   app = await buildApp({ config, pool });
 });
 afterAll(async () => {
@@ -36,10 +37,12 @@ describe("accounts, roles and sessions", () => {
   let collector = "";
   let collectorId = "";
 
-  it("bootstraps admins from ADMIN_EMAILS and sends security headers", async () => {
+  it("never grants admin at registration; the operator promotes an existing account; security headers are sent", async () => {
     const a = await call("POST", "/api/auth/register", undefined, { email: "boss@example.com", password: "boss password 1", displayName: "Boss" });
-    expect(a.body.user.role).toBe("admin");
-    admin = a.body.token;
+    expect(a.body.user.role).toBe("collector");
+    expect(await promoteToAdmin(pool, "nobody@example.com")).toBeNull();
+    expect((await promoteToAdmin(pool, "BOSS@example.com"))?.email).toBe("boss@example.com");
+    admin = a.body.token; // same session; the database role now applies
     const c = await call("POST", "/api/auth/register", undefined, { email: "carol@example.com", password: "carol password 1", displayName: "Carol" });
     expect(c.body.user.role).toBe("collector");
     collector = c.body.token;
@@ -58,6 +61,10 @@ describe("accounts, roles and sessions", () => {
     const promoted = await call("PATCH", `/api/admin/users/${collectorId}/role`, admin, { role: "valuer" });
     expect(promoted.body.role).toBe("valuer");
     expect((await call("POST", "/api/fx-rates", collector, fx)).status).toBe(201); // same token, new role
+    // Shared catalogue links are valuer/admin only.
+    const card = await call("POST", "/api/catalog/cards", collector, { game: "pokemon", setCode: "base1", setName: "Base Set", cardNumber: "4/102", cardName: "Charizard" });
+    const refsBy = (t: string) => call("PATCH", `/api/catalog/cards/${card.body.id}/external-refs`, t, { poketrace: "pt-1" });
+    expect((await refsBy(admin)).status).toBe(200);
     const me = (await call("GET", "/api/me", admin)).body.id;
     expect((await call("PATCH", `/api/admin/users/${me}/role`, admin, { role: "collector" })).status).toBe(400);
     const audit = await call("GET", `/api/audit?entityType=user&entityId=${collectorId}`, admin);

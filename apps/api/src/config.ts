@@ -9,7 +9,6 @@ export interface Config {
   enableTcgdex: boolean;
   webDistDir: string | null;
   enableEcbFx: boolean;
-  adminEmails: string[];
   poketraceApiKey: string | null;
   poketraceCommercialLicence: boolean;
 }
@@ -43,7 +42,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     enableTcgdex: bool(env.ENABLE_TCGDEX, true),
     webDistDir: env.WEB_DIST_DIR ?? null,
     enableEcbFx: bool(env.ENABLE_ECB_FX, env.NODE_ENV !== "test"),
-    adminEmails: (env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean),
     poketraceApiKey: env.POKETRACE_API_KEY || null,
     poketraceCommercialLicence: bool(env.POKETRACE_COMMERCIAL_LICENCE, false),
   };

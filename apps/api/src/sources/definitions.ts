@@ -10,6 +10,8 @@ export interface SourceDefinition {
   licenceStatus: "open" | "licensed" | "user_supplied" | "restricted" | "synthetic" | "unlicensed";
   licenceNotes: string;
   reliabilityTier: 1 | 2 | 3;
+  /** Evidence uploaded by users themselves: visible only to the uploader's valuations. */
+  ownerScoped?: boolean;
 }
 
 const BASE_DEFINITIONS: SourceDefinition[] = [
@@ -21,6 +23,7 @@ const BASE_DEFINITIONS: SourceDefinition[] = [
     licenceNotes:
       "Individual sale facts recorded by the user or valuer with a source URL/reference. Visible only to the recording user's valuations.",
     reliabilityTier: 2,
+    ownerScoped: true,
   },
   {
     id: "csv_import",
@@ -30,6 +33,7 @@ const BASE_DEFINITIONS: SourceDefinition[] = [
     licenceNotes:
       "User-supplied export of auction results (e.g. their own auction-house invoices or a licensed dataset). The user warrants they may use the data.",
     reliabilityTier: 2,
+    ownerScoped: true,
   },
   {
     id: "ebay_sold_scrape",
@@ -40,6 +44,7 @@ const BASE_DEFINITIONS: SourceDefinition[] = [
       "Parsed from eBay 'Sold items' result pages without a data licence from eBay. Collection this way is contrary to the eBay User Agreement; " +
       "evidence is labelled UNLICENSED / SCRAPED in every report. Best-offer sales are recorded but rejected because the accepted price is hidden.",
     reliabilityTier: 2,
+    ownerScoped: true,
   },
   {
     id: "tcgdex",

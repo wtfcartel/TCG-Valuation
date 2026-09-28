@@ -100,7 +100,7 @@ export function App() {
       <main>
         {route.name === "dashboard" && <Dashboard collection={collection} />}
         {route.name === "add" && <AddAsset collection={collection} />}
-        {route.name === "asset" && <AssetDetail id={route.id} currency={collection.base_currency} />}
+        {route.name === "asset" && <AssetDetail id={route.id} currency={collection.base_currency} role={me.role} />}
         {route.name === "insurance" && <Insurance collection={collection} />}
         {route.name === "reports" && <Reports collection={collection} />}
         {route.name === "settings" && <Settings me={me} />}

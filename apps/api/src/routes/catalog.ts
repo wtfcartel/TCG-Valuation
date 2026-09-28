@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { audit } from "../audit.js";
+import { requireRole } from "../auth.js";
+import { storeObservations } from "../services/evidence.js";
 import { many, one } from "../db.js";
 import { badRequest, HttpError } from "../errors.js";
 import { parse, user, type AppContext } from "./context.js";
@@ -66,8 +68,10 @@ export async function catalogRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   // Link a catalogue entry to an external source's ID (e.g. {"poketrace": "<card uuid>"}). Audited; merges keys.
+  // The catalogue is shared by every user and these links decide which card's market data is imported,
+  // so only valuers/admins may change them.
   app.patch("/api/catalog/cards/:id/external-refs", async (req) => {
-    const u = user(req);
+    const u = requireRole(req, "valuer", "admin");
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
     const refs = parse(z.record(z.string().min(1).max(200)), req.body);
     const row = await one<{ external_refs: Record<string, string> }>(ctx.pool, `SELECT external_refs FROM card_identities WHERE id = $1`, [id]);
@@ -132,17 +136,7 @@ export async function catalogRoutes(app: FastifyInstance, ctx: AppContext) {
       },
       u.id,
     );
-    for (const o of item.priceGuide) {
-      await ctx.pool.query(
-        `INSERT INTO price_observations (source_id, source_reference, source_url, card_identity_id, observation_kind, grading_company, grade,
-           condition, observed_at, venue, amount_minor, currency, buyers_premium_minor, arms_length, verification_status, verification_notes,
-           fetched_at, raw_payload, ingested_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,now(),$17,$18)
-         ON CONFLICT (source_id, source_reference) DO NOTHING`,
-        [adapter.id, o.sourceReference, o.sourceUrl, identity.id, o.kind, o.gradingCompany, o.grade, o.condition, o.observedAt, o.venue,
-          o.amountMinor, o.currency, o.buyersPremiumMinor, o.armsLength, o.verificationStatus, o.verificationNotes, JSON.stringify(o.raw), u.id],
-      );
-    }
+    await storeObservations(ctx.pool, adapter.id, identity.id, item.priceGuide, u.id);
     const row = await one(ctx.pool, `SELECT * FROM card_identities WHERE id = $1`, [identity.id]);
     return reply.code(identity.created ? 201 : 200).send({ identity: row, imageUrl: c.imageUrl, availableVariants: c.variants });
   });

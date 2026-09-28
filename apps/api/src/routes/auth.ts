@@ -31,12 +31,11 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
     if (existing) throw conflict("An account with this email already exists");
     const passwordHash = await hashPassword(body.password);
     const created = await withTx(ctx.pool, async (tx) => {
-      // Bootstrap: addresses listed in ADMIN_EMAILS become admins on registration.
-      const role = ctx.config.adminEmails.includes(body.email) ? "admin" : "collector";
-      const u = await one<{ id: string; email: string; role: "collector" | "admin" }>(
+      // Every self-registered account is a collector; admins are promoted by the operator (npm run create-admin).
+      const u = await one<{ id: string; email: string; role: "collector" }>(
         tx,
-        `INSERT INTO users (email, password_hash, display_name, base_currency, role) VALUES ($1,$2,$3,$4,$5) RETURNING id, email, role`,
-        [body.email, passwordHash, body.displayName, body.baseCurrency, role],
+        `INSERT INTO users (email, password_hash, display_name, base_currency) VALUES ($1,$2,$3,$4) RETURNING id, email, role`,
+        [body.email, passwordHash, body.displayName, body.baseCurrency],
       );
       const c = await one<{ id: string }>(
         tx,

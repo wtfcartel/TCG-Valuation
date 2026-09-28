@@ -7,6 +7,7 @@ import { buildApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { createPool, migrate, type Db } from "../src/db.js";
 import { today } from "../src/services/valuation.js";
+import { promoteToAdmin } from "../src/services/admin.js";
 import { addDays } from "@cardcore/engine";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL ?? "postgres://cardcore:cardcore@localhost:5432/cardcore_test";
@@ -35,7 +36,6 @@ beforeAll(async () => {
     enableDemoSource: true,
     enableTcgdex: false,
     photoStorageDir: await mkdtemp(join(tmpdir(), "cardcore-photos-")),
-    adminEmails: ["admin@example.com"],
   };
   app = await buildApp({ config, pool });
 });
@@ -149,7 +149,8 @@ describe("Cardcore Phase 1 flow", () => {
     const denied = await call("POST", "/api/fx-rates", token, { baseCurrency: "EUR", quoteCurrency: "USD", rate: 9, rateDate: today(), source: "made up" });
     expect(denied.status).toBe(403);
     const admin = await call("POST", "/api/auth/register", undefined, { email: "admin@example.com", password: "admin password 123", displayName: "Admin" });
-    expect(admin.body.user.role).toBe("admin");
+    expect(admin.body.user.role).toBe("collector");
+    await promoteToAdmin(pool, "admin@example.com");
     for (const d of [today(), addDays(today(), -3)]) {
       const fx = await call("POST", "/api/fx-rates", admin.body.token, {
         baseCurrency: "EUR",
@@ -407,6 +408,31 @@ describe("Cardcore Phase 1 flow", () => {
     expect(manual.status).toBe(201);
     const count = await pool.query(`SELECT count(*)::int AS n FROM price_observations WHERE source_id = 'manual'`);
     expect(count.rows[0].n).toBe(1);
+
+    // Security regression: another user's uploaded page (even reusing real eBay item IDs) never reaches our valuations.
+    const before = await call("POST", `/api/assets/${asset2Id}/valuations`, token, { purpose: "market" });
+    const theirs = await call("POST", `/api/collections/${(await call("GET", "/api/me", other)).body.collections[0].id}/assets`, other, {
+      cardIdentityId: identity2Id,
+      acquisitionDate: today(),
+      acquisitionPriceMinor: 100,
+      acquisitionCurrency: "USD",
+      condition: "NM",
+    });
+    const poison = `<ul>${[1, 2, 3, 4, 5]
+      .map((i) => `<li class="s-item"><span>Sold  ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>` +
+        `<a href="https://www.ebay.com/itm/40000000000${i}"><div class="s-item__title"><span>Shanks OP01-120 Japanese NM</span></div></a>` +
+        `<span class="s-item__price"><span>$1.00</span></span></li>`)
+      .join("")}</ul>`.padEnd(200, " ");
+    const up = await call("POST", `/api/assets/${theirs.body.id}/evidence/ebay-page`, other, { html: poison });
+    expect(up.status).toBe(201);
+    expect(up.body.inserted).toBe(5); // same item IDs as our import, stored separately under their scope
+    const after = await call("POST", `/api/assets/${asset2Id}/valuations`, token, { purpose: "market" });
+    expect(after.body.unit_value_minor).toBe(before.body.unit_value_minor);
+    const theirIds = new Set((await pool.query(`SELECT id FROM price_observations WHERE owner_scope = $1`, [(await call("GET", "/api/me", other)).body.id])).rows.map((r) => r.id));
+    expect(after.body.comparables.some((c: { observation_id: string }) => theirIds.has(c.observation_id))).toBe(false);
+
+    // Shared catalogue links are valuer/admin only.
+    expect((await call("PATCH", `/api/catalog/cards/${identity2Id}/external-refs`, other, { poketrace: "x" })).status).toBe(403);
   });
 
   it("records every mutation in the audit trail", async () => {

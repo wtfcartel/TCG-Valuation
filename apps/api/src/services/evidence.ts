@@ -1,7 +1,12 @@
 import type { Queryable } from "../db.js";
 import type { SourcedObservation } from "../sources/types.js";
 
-/** Write sourced observations to the market-data layer. Duplicates (same source + reference) are ignored. */
+const SHARED_SCOPE = "00000000-0000-0000-0000-000000000000";
+
+/**
+ * Write sourced observations to the market-data layer. Duplicates are ignored: for shared sources the
+ * key is (source, reference); for owner-scoped (user-uploaded) sources it is per uploader.
+ */
 export async function storeObservations(
   db: Queryable,
   sourceId: string,
@@ -9,14 +14,17 @@ export async function storeObservations(
   observations: SourcedObservation[],
   userId: string,
 ): Promise<{ inserted: number; duplicates: number }> {
+  const src = await db.query<{ owner_scoped: boolean }>(`SELECT owner_scoped FROM data_sources WHERE id = $1`, [sourceId]);
+  if (!src.rows[0]) throw new Error(`Unknown data source ${sourceId}`);
+  const ownerScope = src.rows[0].owner_scoped ? userId : SHARED_SCOPE;
   let inserted = 0;
   for (const o of observations) {
     const res = await db.query(
       `INSERT INTO price_observations (source_id, source_reference, source_url, card_identity_id, observation_kind, grading_company, grade,
          condition, observed_at, venue, amount_minor, currency, buyers_premium_minor, arms_length, verification_status, verification_notes,
-         fetched_at, raw_payload, ingested_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,now(),$17,$18)
-       ON CONFLICT (source_id, source_reference) DO NOTHING`,
+         fetched_at, raw_payload, ingested_by, owner_scope)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,now(),$17,$18,$19)
+       ON CONFLICT (source_id, source_reference, owner_scope) DO NOTHING`,
       [
         sourceId,
         o.sourceReference,
@@ -36,6 +44,7 @@ export async function storeObservations(
         o.verificationNotes,
         JSON.stringify(o.raw ?? {}),
         userId,
+        ownerScope,
       ],
     );
     inserted += res.rowCount ?? 0;

@@ -8,12 +8,13 @@ import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { createPool, migrate, one } from "./db.js";
 import { today } from "./services/valuation.js";
+import { promoteToAdmin } from "./services/admin.js";
 
 const config = loadConfig();
 if (process.env.NODE_ENV === "production") throw new Error("Refusing to seed demo data in production");
 const pool = createPool(config.databaseUrl);
 await migrate(pool, config);
-const app = await buildApp({ config: { ...config, enableDemoSource: true, adminEmails: [...config.adminEmails, "demo@cardcore.local"] }, pool });
+const app = await buildApp({ config: { ...config, enableDemoSource: true }, pool });
 
 async function call(method: string, url: string, token?: string, payload?: unknown) {
   const res = await app.inject({
@@ -33,7 +34,9 @@ try {
   if (existing) {
     console.log(`Demo user already exists — log in as ${email} / ${password}`);
   } else {
-    const { token } = await call("POST", "/api/auth/register", undefined, { email, password, displayName: "Demo Collector", baseCurrency: "USD" });
+    await call("POST", "/api/auth/register", undefined, { email, password, displayName: "Demo Collector", baseCurrency: "USD" });
+    await promoteToAdmin(pool, email); // demo data only: lets the demo account record FX rates
+    const { token } = await call("POST", "/api/auth/login", undefined, { email, password });
     const me = await call("GET", "/api/me", token);
     const collectionId = me.collections[0].id;
 

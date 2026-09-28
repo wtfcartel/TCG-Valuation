@@ -59,8 +59,8 @@ export async function currentMethodology(db: Queryable, onDate: string) {
 }
 
 /**
- * Observations usable for an asset: shared market data from non-user-supplied sources, plus
- * user-supplied evidence recorded by the asset's owner (never another user's manual entries).
+ * Observations usable for an asset: shared market data from server-fetched sources, plus evidence the
+ * asset's owner uploaded themselves (owner-scoped sources). Another user's uploads are never used.
  */
 export async function loadObservations(db: Queryable, cardIdentityId: string, ownerUserId: string): Promise<ObservationRow[]> {
   return many<ObservationRow>(
@@ -70,7 +70,7 @@ export async function loadObservations(db: Queryable, cardIdentityId: string, ow
      JOIN card_identities ci ON ci.id = po.card_identity_id
      JOIN data_sources ds ON ds.id = po.source_id
      WHERE po.card_identity_id = $1
-       AND (ds.licence_status <> 'user_supplied' OR po.ingested_by = $2)
+       AND (NOT ds.owner_scoped OR po.owner_scope = $2)
      ORDER BY po.observed_at DESC`,
     [cardIdentityId, ownerUserId],
   );

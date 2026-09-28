@@ -190,7 +190,7 @@ function ValuationPanel({ valuationId, assetId, currency, onChange }: { valuatio
 }
 
 /** Link the catalogue entry to external sources (e.g. the exact PokeTrace printing when a search is ambiguous). */
-function CatalogueLinks({ identityId, refs, onSaved }: { identityId: string; refs: Record<string, string>; onSaved: () => void }) {
+function CatalogueLinks({ identityId, refs, onSaved, canEdit }: { identityId: string; refs: Record<string, string>; onSaved: () => void; canEdit: boolean }) {
   const [poketrace, setPoketrace] = useState(refs.poketrace ?? "");
   const { busy, error, run } = useAction();
   return (
@@ -210,7 +210,9 @@ function CatalogueLinks({ identityId, refs, onSaved }: { identityId: string; ref
           )}
         </tbody>
       </table>
+      {!canEdit && <p className="muted small">The catalogue is shared by all users, so links are set by a valuer or admin.</p>}
       <form
+        hidden={!canEdit}
         className="form-row"
         onSubmit={(e) => {
           e.preventDefault();
@@ -265,7 +267,7 @@ function AuditTrail({ assetId }: { assetId: string }) {
   );
 }
 
-export function AssetDetail({ id, currency }: { id: string; currency: string }) {
+export function AssetDetail({ id, currency, role }: { id: string; currency: string; role: string }) {
   const [a, setA] = useState<Any | null>(null);
   const [evidence, setEvidence] = useState<Any[]>([]);
   const [sources, setSources] = useState<Any[]>([]);
@@ -573,7 +575,7 @@ export function AssetDetail({ id, currency }: { id: string; currency: string }) 
       </Card>
 
       <div className="grid2">
-        <CatalogueLinks identityId={a.card_identity_id} refs={a.external_refs ?? {}} onSaved={load} />
+        <CatalogueLinks identityId={a.card_identity_id} refs={a.external_refs ?? {}} onSaved={load} canEdit={role === "valuer" || role === "admin"} />
         <AuditTrail assetId={id} />
       </div>
 

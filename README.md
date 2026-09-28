@@ -38,6 +38,8 @@ createdb cardcore               # or use docker compose below
 npm run migrate
 npm run seed                    # optional demo data: demo@cardcore.local / cardcore-demo-password
 npm run dev:api                 # http://localhost:8080
+# register your account in the app, then make it an admin (operator-only, run on the server):
+npm run create-admin -w @cardcore/api -- you@example.com
 npm run dev:web                 # http://localhost:5173 (proxies /api)
 ```
 

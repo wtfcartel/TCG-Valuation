@@ -229,7 +229,17 @@ export class PokeTraceAdapter implements SourceAdapter {
   /** Find the PokeTrace card matching the identity (name + number + variant + set, US market). */
   async resolveCard(identity: CardIdentityRow): Promise<PtCardSummary> {
     if (identity.external_refs?.poketrace) {
-      return (await this.get<{ data: PtCardSummary }>(`/cards/${encodeURIComponent(identity.external_refs.poketrace)}`, { market: "US" })).data;
+      const linked = (await this.get<{ data: PtCardSummary }>(`/cards/${encodeURIComponent(identity.external_refs.poketrace)}`, { market: "US" })).data;
+      // Defence in depth: a stored link must still describe this card before its market data is imported.
+      const sameName = linked.name.toLowerCase().includes(identity.card_name.toLowerCase().split(/\s+/)[0] ?? "");
+      const sameNumber = !identity.card_number || numberKey(linked.cardNumber) === numberKey(identity.card_number);
+      if (!sameName || !sameNumber) {
+        throw new SourceNotConfiguredError(
+          this.id,
+          `linked PokeTrace card ${linked.id} (${linked.name} ${linked.cardNumber ?? ""}) does not match ${identity.card_name} ${identity.card_number ?? ""}`,
+        );
+      }
+      return linked;
     }
     const game = identity.language === "ja" ? "pokemon-japanese" : identity.language === "zh" ? "pokemon-chinese" : "pokemon";
     const found: PtCardSummary[] = [];

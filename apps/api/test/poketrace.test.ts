@@ -161,6 +161,12 @@ describe("PokeTrace adapter", () => {
     await expect(new PokeTraceAdapter("pc_test", impl, { sleep: noSleep }).fetchEvidence(raw)).rejects.toBeInstanceOf(PokeTraceError);
   });
 
+  it("refuses a stored link that points at a different card", async () => {
+    const { impl } = mockApi({ plan: "Pro" });
+    const wrong = { ...charizard, card_name: "Blastoise", card_number: "2/102", external_refs: { poketrace: "pt-unl" } };
+    await expect(new PokeTraceAdapter("pc_test", impl, { sleep: noSleep }).fetchEvidence({ ...raw, identity: wrong })).rejects.toThrow(/does not match/);
+  });
+
   it("uses a stored PokeTrace card id when the catalogue entry has one", async () => {
     const { impl, calls } = mockApi({ plan: "Pro" });
     await new PokeTraceAdapter("pc_test", impl, { sleep: noSleep }).fetchEvidence({ ...raw, identity: { ...charizard, external_refs: { poketrace: "pt-unl" } } });

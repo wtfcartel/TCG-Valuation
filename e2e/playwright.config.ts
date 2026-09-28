@@ -28,7 +28,6 @@ export default defineConfig({
       ENABLE_DEMO_SOURCE: "true",
       ENABLE_ECB_FX: "false",
       ENABLE_TCGDEX: "false",
-      ADMIN_EMAILS: "e2e-admin@example.com",
       PHOTO_STORAGE_DIR: "/tmp/cardcore-e2e-photos",
     },
   },
