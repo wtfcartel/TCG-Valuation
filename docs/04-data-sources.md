@@ -9,7 +9,7 @@ Status below reflects what is publicly known and what the reference projects act
 | **TCGdex** (api.tcgdex.net) | Multilingual Pokémon catalogue; embeds Cardmarket and TCGplayer aggregate prices | Free, open REST API, no key | Card database is MIT-licensed (confirmed in CardScope's THIRD_PARTY_NOTICES). Artwork and trademarks are not licensed. Embedded prices come from third parties, so their reuse terms follow the original vendor **(verify)** | `tcgdex` adapter: catalogue search/import; prices stored as `price_guide` only |
 | **Scryfall** (MTG) | Catalogue; TCGplayer/Cardmarket price snapshots | Free API with rate limits | Catalogue use is allowed under their guidelines; you may not paywall Scryfall data, and prices are indicative **(verify)** | Candidate MTG catalogue adapter (Phase 2) |
 | **YGOPRODeck** (Yu-Gi-Oh!) | Catalogue; price aggregates | Free API; images must be cached locally | Terms restrict hot-linking; commercial terms unclear **(verify)** | Candidate catalogue adapter |
-| **One Piece TCG** | No official API; community datasets | Varies | Unclear; treat as manual catalogue entry | Manual `card_identities` |
+| **One Piece TCG** | No official API; community OPTCG API (optcgapi.com) | Free, no key | Catalogue only; terms unstated, run on a personal server **(verify)** | Manual `card_identities`; OPTCG API is a candidate catalogue adapter |
 | **eBay Marketplace Insights API** | **Sold items, ~90 days, transaction-level** (best completed-sale source for raw and graded cards) | Limited Release; needs eBay business approval | Allowed within the licence; display and retention rules apply **(verify)**. The Browse API returns *active listings* (asking prices) only. Scraping sold listings breaches the User Agreement | Registered `restricted`; highest-priority licence to pursue |
 | **Cardmarket API** | Price guide (trend/avg/low), listings | Approved partners/sellers only | Redistribution needs permission; aggregates are not transactions | `restricted`; aggregates → `price_guide` only |
 | **TCGplayer API / tcgcsv mirror** | Market price (aggregate), listings | New API keys largely unavailable; tcgcsv is an unofficial daily mirror (used by The Tin) | tcgcsv carries no commercial licence, so it is high risk for a proprietary SaaS | `restricted` |
@@ -17,7 +17,7 @@ Status below reflects what is publicly known and what the reference projects act
 | **PSA Public API** | Cert verification (grade, card details) | Free token, low daily quota | Verification use fine; population and APR (auction prices) need a commercial agreement **(verify)** | `psa` `restricted`. Cert verification is the natural first integration, because it raises grading certainty in the confidence classification |
 | **Auction houses** (Goldin, Heritage, Fanatics Collect, PWCC) | Hammer + buyer's premium, **transaction-level** | Public results pages, no open API | Citing individual lots (facts with URL) as evidence is low risk; systematic extraction may breach terms/database right. Heritage and others license data **(verify)** | `manual` entry and `csv_import` today; `auction_house` licensed feed later |
 | **Commercial sales-data vendors** (e.g. Card Ladder, Alt, 130point, CardHedger, PokemonPriceTracker, JustTCG) | Varies: some provide transaction-level sold data, others aggregates | Paid APIs | Licence terms decide whether per-transaction data can go into reports **(verify each)** | Implement as new `SourceAdapter`s once licensed |
-| **ECB euro reference rates** | Daily FX | Free, public | Free reuse with attribution | Recommended FX source; add a scheduled importer (Phase 2). Manual/API entry exists now (`POST /api/fx-rates`) |
+| **ECB euro reference rates** | Daily FX | Free, public | Free reuse with attribution | Integrated: daily Vercel Cron import (`/api/cron/ecb`) plus manual entry (`POST /api/fx-rates`) |
 
 ## PokeTrace (integrated)
 
@@ -54,6 +54,39 @@ On 2026-09-26 the product owner chose to use eBay sold-listing data without a li
 3. **FX:** ECB reference rates.
 
 Everything else needs a licence. The adapter interface (`apps/api/src/sources/types.ts`) means adding one is a new file plus a registry line; the valuation engine, ledger and reports stay unchanged.
+
+## Additional free APIs: what can be attached without fees (checked 2026-09-28)
+
+**Bottom line: none of these adds comparable-sale evidence.** Every free source below is a catalogue, an aggregate price guide or a certificate lookup. Free transaction-level sold data does not exist. It needs eBay Marketplace Insights, PokeTrace Scale, a paid vendor or the scraped route above.
+
+### No sign-up: Cardcore can connect these itself
+
+| Source | Gives Cardcore | Terms that matter | Fit for a paid Cardcore |
+|---|---|---|---|
+| **TCGdex** | Pokémon catalogue + aggregate prices | MIT data | Integrated |
+| **ECB** | FX | Open data | Integrated |
+| [**Frankfurter**](https://frankfurter.dev/) | ECB rates as JSON, back to 1999 | Open source, no key, fair use | Yes. Only useful as an ECB fallback |
+| [**Scryfall**](https://scryfall.com/docs/api) | MTG catalogue + daily TCGplayer/Cardmarket prices | Under 10 req/s; must send User-Agent and Accept headers; prices only as "a general estimate" ([bulk data](https://scryfall.com/docs/api/bulk-data)); **Scryfall data must not be paywalled** ([terms](https://scryfall.com/docs/terms)) | Catalogue: yes, if MTG card data is never behind the paywall. Prices: `price_guide` only |
+| [**YGOPRODeck**](https://ygoprodeck.com/api-guide/) | Yu-Gi-Oh! catalogue + aggregate prices | 20 req/s (1-hour ban if exceeded); must cache data and re-host images, or the IP is blacklisted; commercial terms not stated **(verify)** | Catalogue: probably. Prices: `price_guide` only |
+| [**OPTCG API**](https://optcgapi.com/) | One Piece catalogue (English, OP-01 onwards) | No key; read-only; run by one person on a paid VPS, who asks for light use; no stated licence **(verify)** | Catalogue only; cache heavily |
+| [**Lorcast**](https://lorcast.com/docs/api) | Disney Lorcana catalogue + daily prices | No key; prices change daily, so cache for 24 h; commercial terms not stated **(verify)** | Catalogue; `price_guide` only |
+
+### Free, but the owner must sign up (only the owner can accept the terms)
+
+| Source | Free allowance | Catch |
+|---|---|---|
+| **PokeTrace** | 250/day | Integrated. Free tier gives averages only |
+| [**PSA Public API**](https://www.psacard.com/publicapi) | Free token, 100 calls/day | Cert verification only (grade, card details). Population and auction data need an agreement. **Most valuable free add:** a verified cert raises grading certainty in the confidence classification |
+| [**JustTCG**](https://justtcg.com/) | 1,000 calls/month | Free tier is **personal/non-commercial only**; commercial use needs a paid plan |
+| [**pokemontcg.io**](https://docs.pokemontcg.io/) | 1,000/day without a key | **Deprecated**: no new registrations; existing keys work until 1 March 2027. Not worth integrating; TCGdex covers it |
+
+### Free, but not usable for a commercial Cardcore
+
+- **tcgcsv** (TCGplayer mirror): no licence. TCGplayer's terms discourage commercial reuse.
+- **tcgapi.dev, JustTCG free**: free tiers are non-commercial.
+- The Vercel **Hobby** plan hosting Cardcore is itself non-commercial. That applies until Cardcore charges users.
+
+**Recommended order:** PSA cert verification (after the owner signs up), then the Scryfall, YGOPRODeck and OPTCG catalogue adapters. Each is one `SourceAdapter` file plus a registry line. Frankfurter and Lorcast only if needed.
 
 ## Per-observation metadata captured (all sources)
 
