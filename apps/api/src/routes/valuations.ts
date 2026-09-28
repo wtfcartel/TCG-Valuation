@@ -88,7 +88,7 @@ export async function valuationRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!(adapter instanceof PokeTraceAdapter)) throw notFound("Source status");
     if (!adapter.enabled()) return { sourceId: id, configured: false };
     try {
-      return { sourceId: id, configured: true, ...(await adapter.planInfo(true)) };
+      return { sourceId: id, configured: true, ...(await adapter.planInfo()) };
     } catch (error) {
       const status = error instanceof PokeTraceError ? error.status : 502;
       throw new HttpError(status === 401 ? 422 : 502, `PokeTrace status check failed: ${(error as Error).message}`, "upstream_error");

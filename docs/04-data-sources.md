@@ -21,17 +21,21 @@ Status below reflects what is publicly known and what the reference projects act
 
 ## PokeTrace (integrated)
 
-Adapter `poketrace`, built against the request/response shapes of the MIT-licensed [official SDK](https://github.com/PokeTrace/sdk).
+Adapter `poketrace`, built against PokeTrace's published API reference (base `https://api.poketrace.com/v1`, `X-API-Key` header) and the MIT-licensed [official SDK](https://github.com/PokeTrace/sdk).
 
-| Plan | What Cardcore stores |
-|---|---|
-| Free (250 requests/day, US raw cards per their site) | eBay and TCGplayer rolling averages for the subject's tier, as `price_guide` (context only, never comparables) |
-| Pro and above | Individual eBay sold listings as `completed_sale`, with the eBay item ID as transaction key. PokeTrace's `anomalyFlag` → verification `failed` (rejected with PokeTrace's reason); best-offer listings → `unverified` |
+| Plan | Limits | What Cardcore stores |
+|---|---|---|
+| Free | 250/day, 1 request per 2 s; US market, raw conditions only | eBay and TCGplayer raw-tier averages (e.g. `NEAR_MINT`) as `price_guide`: context only, **no comparables** |
+| Pro / Growth | 10k / 30k per day | As Free, plus graded-tier averages (`PSA_10`, `CGC_9_5`, …): still **price guides only** |
+| Scale | 100k/day | Adds **individual eBay sold listings** → `completed_sale` comparables keyed by eBay item ID. PokeTrace `anomalyFlag` → `failed`; best-offer listings → `unverified` |
 
-- **Card matching:** search by name and number, then pick the printing by variant and set (for example 1st Edition vs Unlimited Holofoil). If ambiguous, the import fails and lists the candidates. Set the right one with `PATCH /api/catalog/cards/:id/external-refs {"poketrace": "<id>"}`.
-- **Licence status** is `unlicensed` (evaluation) until the operator sets `POKETRACE_COMMERCIAL_LICENCE=true` after confirming the plan permits commercial use. Until then, reports disclose PokeTrace evidence in the provenance statement. PokeTrace does not publish how it obtains eBay data; ask before relying on it commercially.
+- **Plan detection:** the plan is read from the `X-Plan` response header, so the Scale-only listings endpoint is never called on other plans. `GET /api/sources/poketrace/status` shows plan and quota via `/auth/info`, without the key.
+- **Rate limits:** requests are spaced to the plan's burst limit (2.1 s on Free). A burst `429` waits `retryAfter` and retries once; a daily-quota `429` is reported.
+- **Card matching:** search (20 per page) by name and number, then pick the printing by variant and set. If ambiguous, the import fails and lists the candidates. Set the right one with `PATCH /api/catalog/cards/:id/external-refs {"poketrace": "<id>"}`.
+- **Licence status** is `unlicensed` (evaluation) until `POKETRACE_COMMERCIAL_LICENCE=true` is set after confirming the plan permits commercial use. Until then, reports disclose it in the provenance statement.
 - **Duplicates:** the same eBay sale from PokeTrace and from a saved page is used once (CSM-1.1.0).
-- **Not verified live:** this environment's network policy blocks api.poketrace.com, so the adapter is tested against a mocked API only.
+- **Not yet in Cardcore:** EU Cardmarket tiers (Pro+) and the Scale WebSocket feed.
+- **Not verified live:** this environment's network policy blocks api.poketrace.com; tests run against a mocked API that follows the published reference.
 
 ## Unlicensed / scraped evidence (business-accepted risk)
 

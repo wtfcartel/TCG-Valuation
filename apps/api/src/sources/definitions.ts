@@ -126,7 +126,7 @@ export function sourceDefinitions(opts: { poketraceCommercialLicence?: boolean }
       provides: ["catalogue", "completed_sale", "price_guide"],
       licenceStatus: opts.poketraceCommercialLicence ? "licensed" : "unlicensed",
       licenceNotes: opts.poketraceCommercialLicence
-        ? "Commercial PokeTrace plan confirmed by the operator. Individual eBay sold listings (Pro plan) are used as evidence; rolling averages are price guides only."
+        ? "Commercial PokeTrace plan confirmed by the operator. Individual eBay sold listings (Scale plan) are used as evidence; tier averages are price guides only."
         : "Evaluation use: commercial-use terms of the key's plan not yet confirmed (set POKETRACE_COMMERCIAL_LICENCE=true once they are). PokeTrace does not state how it obtains eBay data.",
       reliabilityTier: 1,
     },
