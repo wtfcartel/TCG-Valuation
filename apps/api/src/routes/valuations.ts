@@ -1,0 +1,202 @@
+import type { FastifyInstance } from "fastify";
+import { z } from "zod";
+import { audit } from "../audit.js";
+import { many, one } from "../db.js";
+import { getValuation } from "../services/valuation.js";
+import { HttpError, notFound } from "../errors.js";
+import { requireRole } from "../auth.js";
+import { importEcbRates } from "../services/ecb.js";
+import { PokeTraceAdapter, PokeTraceError } from "../sources/poketrace.js";
+import { assertAssetAccess, assertValuationAccess, currency, isoDate, minor, parse, user, uuid, type AppContext } from "./context.js";
+
+export async function valuationRoutes(app: FastifyInstance, ctx: AppContext) {
+  app.get("/api/assets/:id/valuations", async (req) => {
+    const u = user(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    await assertAssetAccess(ctx.pool, u, id);
+    return many(ctx.pool, `SELECT * FROM valuations_effective WHERE asset_id = $1 ORDER BY performed_at DESC`, [id]);
+  });
+
+  app.get("/api/valuations/:id", async (req) => {
+    const u = user(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    await assertValuationAccess(ctx.pool, u, id);
+    return getValuation(ctx.pool, id);
+  });
+
+  app.post("/api/valuations/:id/overrides", async (req, reply) => {
+    const u = user(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    await assertValuationAccess(ctx.pool, u, id);
+    const b = parse(z.object({ overrideUnitValueMinor: minor, reason: z.string().trim().min(10).max(2000) }), req.body);
+    const row = await one(
+      ctx.pool,
+      `INSERT INTO valuation_overrides (valuation_id, override_unit_value_minor, reason, overridden_by, overrider_role)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [id, b.overrideUnitValueMinor, b.reason, u.id, u.role],
+    );
+    await audit(ctx.pool, u.id, "valuation.overridden", "valuation", id, b, req.id);
+    return reply.code(201).send(row);
+  });
+
+  // ───────────── FX rates (documented, append-only) ─────────────
+
+  app.get("/api/fx-rates", async (req) => {
+    user(req);
+    return many(ctx.pool, `SELECT * FROM fx_rates ORDER BY rate_date DESC, base_currency, quote_currency LIMIT 500`);
+  });
+
+  // FX rates are shared by every valuation, so only valuers/admins may record them.
+  app.post("/api/fx-rates", async (req, reply) => {
+    const u = requireRole(req, "valuer", "admin");
+    const b = parse(
+      z.object({
+        baseCurrency: currency,
+        quoteCurrency: currency,
+        rate: z.number().positive(),
+        rateDate: isoDate,
+        source: z.string().min(2).max(200),
+        sourceUrl: z.string().url().nullable().default(null),
+      }),
+      req.body,
+    );
+    const row = await one(
+      ctx.pool,
+      `INSERT INTO fx_rates (base_currency, quote_currency, rate, rate_date, source, source_url, recorded_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (base_currency, quote_currency, rate_date, source) DO NOTHING RETURNING *`,
+      [b.baseCurrency, b.quoteCurrency, b.rate, b.rateDate, b.source, b.sourceUrl, u.id],
+    );
+    if (row) await audit(ctx.pool, u.id, "fx_rate.recorded", "fx_rate", (row as { id: string }).id, b, req.id);
+    return reply.code(row ? 201 : 200).send(row ?? { duplicate: true });
+  });
+
+  app.post("/api/fx-rates/import-ecb", async (req, reply) => {
+    const u = requireRole(req, "valuer", "admin");
+    const b = parse(z.object({ feed: z.enum(["daily", "last90Days", "full"]).default("daily") }), req.body ?? {});
+    try {
+      const result = await importEcbRates(ctx.pool, b.feed);
+      await audit(ctx.pool, u.id, "fx_rate.ecb_imported", "fx_rate", b.feed, { ...result }, req.id);
+      return reply.code(201).send(result);
+    } catch (error) {
+      throw new HttpError(502, `ECB import failed: ${(error as Error).message}`, "upstream_error");
+    }
+  });
+
+  app.get("/api/fx-rates/latest", async (req) => {
+    user(req);
+    return many(
+      ctx.pool,
+      `SELECT DISTINCT ON (base_currency, quote_currency) base_currency, quote_currency, rate, rate_date, source
+       FROM fx_rates ORDER BY base_currency, quote_currency, rate_date DESC, fetched_at DESC`,
+    );
+  });
+
+  // ───────────── Reference data & audit ─────────────
+
+  app.get("/api/methodology", async () => {
+    const versions = await many(ctx.pool, `SELECT * FROM methodology_versions ORDER BY effective_from DESC`);
+    const reviews = await many(
+      ctx.pool,
+      `SELECT mr.*, r.name AS reviewer_name, r.credentials, r.organisation FROM methodology_reviews mr JOIN reviewers r ON r.id = mr.reviewer_id`,
+    );
+    return { versions, reviews };
+  });
+
+  app.get("/api/sources", async () => ctx.sources.list());
+
+  // ───────────── Independent methodology review (admin) ─────────────
+  // A review validates the methodology only; reports say so explicitly (see services/reports.ts).
+
+  app.get("/api/reviewers", async (req) => {
+    user(req);
+    return many(ctx.pool, `SELECT * FROM reviewers ORDER BY created_at`);
+  });
+
+  app.post("/api/reviewers", async (req, reply) => {
+    const u = requireRole(req, "admin");
+    const b = parse(
+      z.object({ name: z.string().trim().min(2).max(200), credentials: z.string().trim().min(2).max(200), organisation: z.string().trim().max(200).nullable().default(null) }),
+      req.body,
+    );
+    const row = await one<{ id: string }>(
+      ctx.pool,
+      `INSERT INTO reviewers (name, credentials, organisation) VALUES ($1,$2,$3) RETURNING *`,
+      [b.name, b.credentials, b.organisation],
+    );
+    await audit(ctx.pool, u.id, "reviewer.created", "reviewer", row!.id, b, req.id);
+    return reply.code(201).send(row);
+  });
+
+  app.post("/api/methodology/:id/reviews", async (req, reply) => {
+    const u = requireRole(req, "admin");
+    const { id } = parse(z.object({ id: z.string().min(1) }), req.params);
+    const b = parse(
+      z.object({
+        reviewerId: z.string().uuid(),
+        reviewDate: isoDate,
+        scopeStatement: z.string().trim().min(20).max(4000),
+        conclusion: z.string().trim().min(10).max(4000),
+      }),
+      req.body,
+    );
+    const version = await one(ctx.pool, `SELECT 1 FROM methodology_versions WHERE id = $1`, [id]);
+    if (!version) throw notFound("Methodology version");
+    const reviewer = await one(ctx.pool, `SELECT 1 FROM reviewers WHERE id = $1`, [b.reviewerId]);
+    if (!reviewer) throw notFound("Reviewer");
+    const row = await one<{ id: string }>(
+      ctx.pool,
+      `INSERT INTO methodology_reviews (methodology_version_id, reviewer_id, review_date, scope_statement, conclusion)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [id, b.reviewerId, b.reviewDate, b.scopeStatement, b.conclusion],
+    );
+    await audit(ctx.pool, u.id, "methodology_review.recorded", "methodology_version", id, b, req.id);
+    return reply.code(201).send(row);
+  });
+
+  // Plan/quota for an API-key source (currently PokeTrace). Never echoes the key.
+  app.get("/api/sources/:id/status", async (req) => {
+    user(req);
+    const { id } = parse(z.object({ id: z.string() }), req.params);
+    const adapter = ctx.sources.get(id);
+    if (!(adapter instanceof PokeTraceAdapter)) throw notFound("Source status");
+    if (!adapter.enabled()) return { sourceId: id, configured: false };
+    try {
+      return { sourceId: id, configured: true, ...(await adapter.planInfo()) };
+    } catch (error) {
+      const status = error instanceof PokeTraceError ? error.status : 502;
+      throw new HttpError(status === 401 ? 422 : 502, `PokeTrace status check failed: ${(error as Error).message}`, "upstream_error");
+    }
+  });
+
+  app.get("/api/audit", async (req) => {
+    const u = user(req);
+    const q = parse(
+      z.object({
+        entityType: z.string().optional(),
+        entityId: z.string().optional(),
+        assetId: z.string().uuid().optional(),
+        limit: z.coerce.number().int().min(1).max(500).default(100),
+      }),
+      req.query,
+    );
+    if (q.assetId) {
+      // Everything about one asset: the asset's own events plus valuations and insurance events that reference it.
+      await assertAssetAccess(ctx.pool, u, q.assetId);
+      return many(
+        ctx.pool,
+        `SELECT * FROM audit_events
+         WHERE (entity_type = 'asset' AND entity_id = $1) OR detail->>'assetId' = $1
+            OR (entity_type = 'valuation' AND entity_id IN (SELECT id::text FROM valuations WHERE asset_id = $1::uuid))
+         ORDER BY id DESC LIMIT $2`,
+        [q.assetId, q.limit],
+      );
+    }
+    return many(
+      ctx.pool,
+      `SELECT * FROM audit_events WHERE ($1::text IS NULL OR entity_type = $1) AND ($2::text IS NULL OR entity_id = $2)
+         AND ($3::boolean OR actor_user_id = $4)
+       ORDER BY id DESC LIMIT $5`,
+      [q.entityType ?? null, q.entityId ?? null, u.role === "admin", u.id, q.limit],
+    );
+  });
+}

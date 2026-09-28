@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cardcore
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cardcore}
+      POSTGRES_DB: cardcore
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cardcore -d cardcore"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://cardcore:${POSTGRES_PASSWORD:-cardcore}@postgres:5432/cardcore
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (at least 16 characters)}
+      ENABLE_DEMO_SOURCE: ${ENABLE_DEMO_SOURCE:-false}
+      ENABLE_TCGDEX: ${ENABLE_TCGDEX:-true}
+    ports:
+      - "8080:8080"
+    volumes:
+      - photos:/data/photos
+
+volumes:
+  pgdata:
+  photos:

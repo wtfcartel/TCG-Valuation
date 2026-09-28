@@ -1,0 +1,115 @@
+import { readdir, readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import pg from "pg";
+import { METHODOLOGY_VERSIONS } from "@cardcore/engine";
+import { sourceDefinitions } from "./sources/definitions.js";
+
+// Return bigint / numeric columns as JS numbers. Minor-unit amounts stay far below 2^53.
+pg.types.setTypeParser(20, (v) => Number(v)); // int8
+pg.types.setTypeParser(1700, (v) => Number(v)); // numeric
+pg.types.setTypeParser(1082, (v) => v); // date → 'YYYY-MM-DD' string, no TZ shifting
+pg.types.setTypeParser(1184, (v) => new Date(v).toISOString()); // timestamptz → ISO-8601 UTC string
+
+export type Db = pg.Pool;
+export type Tx = pg.PoolClient;
+export type Queryable = pg.Pool | pg.PoolClient;
+
+export function createPool(connectionString: string): pg.Pool {
+  // Serverless instances each hold their own pool; keep it small and let idle connections go.
+  return process.env.VERCEL
+    ? new pg.Pool({ connectionString, max: 3, idleTimeoutMillis: 10_000 })
+    : new pg.Pool({ connectionString, max: 10 });
+}
+
+export async function withTx<T>(pool: pg.Pool, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function one<T extends pg.QueryResultRow>(db: Queryable, sql: string, params: unknown[] = []): Promise<T | null> {
+  const { rows } = await db.query<T>(sql, params);
+  return rows[0] ?? null;
+}
+
+export async function many<T extends pg.QueryResultRow>(db: Queryable, sql: string, params: unknown[] = []): Promise<T[]> {
+  const { rows } = await db.query<T>(sql, params);
+  return rows;
+}
+
+function migrationsDir(): string {
+  // MIGRATIONS_DIR for bundled serverless builds; otherwise src/ (tsx) and dist/ (bundled) both sit beside ../migrations.
+  return process.env.MIGRATIONS_DIR ?? join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
+}
+
+/** Serialises concurrent migrators (e.g. several serverless cold starts). Transaction-scoped, so it also works through PgBouncer. */
+const MIGRATION_LOCK = 72_710_001;
+
+export async function migrate(pool: pg.Pool, opts: { poketraceCommercialLicence?: boolean } = {}): Promise<string[]> {
+  const files = (await readdir(migrationsDir())).filter((f) => f.endsWith(".sql")).sort();
+  const ran: string[] = [];
+  await withTx(pool, async (tx) => {
+    await tx.query("SELECT pg_advisory_xact_lock($1)", [MIGRATION_LOCK]);
+    await tx.query(`CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
+  });
+  for (const file of files) {
+    await withTx(pool, async (tx) => {
+      await tx.query("SELECT pg_advisory_xact_lock($1)", [MIGRATION_LOCK]);
+      const done = await tx.query("SELECT 1 FROM schema_migrations WHERE name = $1", [file]);
+      if (done.rowCount) return;
+      await tx.query(await readFile(join(migrationsDir(), file), "utf8"));
+      await tx.query("INSERT INTO schema_migrations (name) VALUES ($1)", [file]);
+      ran.push(file);
+    });
+  }
+  await withTx(pool, async (tx) => {
+    await tx.query("SELECT pg_advisory_xact_lock($1)", [MIGRATION_LOCK]);
+    await ensureReferenceData(tx, opts);
+  });
+  return ran;
+}
+
+const METHODOLOGY_SUMMARY =
+  "Mean of the three most recent verified arm's-length completed sales of the closest equivalent asset, with dispersion-triggered " +
+  "escalation to 5–10 transactions, documented exclusions, progressive window widening and secondary comparables for thin markets, " +
+  "and a transparent evidence-based confidence classification.";
+
+/** Idempotently register data sources and every methodology version. */
+export async function ensureReferenceData(pool: Queryable, opts: { poketraceCommercialLicence?: boolean } = {}): Promise<void> {
+  for (const s of sourceDefinitions(opts)) {
+    await pool.query(
+      `INSERT INTO data_sources (id, name, provides, licence_status, licence_notes, reliability_tier, owner_scoped)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, provides = EXCLUDED.provides,
+         licence_status = EXCLUDED.licence_status, licence_notes = EXCLUDED.licence_notes,
+         reliability_tier = EXCLUDED.reliability_tier, owner_scoped = EXCLUDED.owner_scoped`,
+      [s.id, s.name, s.provides, s.licenceStatus, s.licenceNotes, s.reliabilityTier, s.ownerScoped ?? false],
+    );
+  }
+  for (const m of METHODOLOGY_VERSIONS) {
+    await pool.query(
+      `INSERT INTO methodology_versions (id, name, summary, parameters, document_ref, effective_from)
+       VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO NOTHING`,
+      [
+        m.id,
+        "Cardcore Comparable Sales Method",
+        m.parameters.deduplicateTransactions
+          ? `${METHODOLOGY_SUMMARY} A transaction evidenced by several sources is used once.`
+          : METHODOLOGY_SUMMARY,
+        JSON.stringify(m.parameters),
+        m.documentRef,
+        m.effectiveFrom,
+      ],
+    );
+  }
+}
