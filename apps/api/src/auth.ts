@@ -57,3 +57,9 @@ export function requireUser(req: FastifyRequest): AuthUser {
   if (!req.user) throw new HttpError(401, "Authentication required", "unauthorized");
   return req.user;
 }
+
+export function requireRole(req: FastifyRequest, ...roles: AuthUser["role"][]): AuthUser {
+  const u = requireUser(req);
+  if (!roles.includes(u.role)) throw new HttpError(403, `Requires role: ${roles.join(" or ")}`, "forbidden");
+  return u;
+}

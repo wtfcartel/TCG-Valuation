@@ -35,6 +35,7 @@ beforeAll(async () => {
     enableDemoSource: true,
     enableTcgdex: false,
     photoStorageDir: await mkdtemp(join(tmpdir(), "cardcore-photos-")),
+    adminEmails: ["admin@example.com"],
   };
   app = await buildApp({ config, pool });
 });
@@ -144,9 +145,13 @@ describe("Cardcore Phase 1 flow", () => {
     expect(bad.status).toBe(400);
   });
 
-  it("records documented FX rates", async () => {
+  it("records documented FX rates (valuers/admins only)", async () => {
+    const denied = await call("POST", "/api/fx-rates", token, { baseCurrency: "EUR", quoteCurrency: "USD", rate: 9, rateDate: today(), source: "made up" });
+    expect(denied.status).toBe(403);
+    const admin = await call("POST", "/api/auth/register", undefined, { email: "admin@example.com", password: "admin password 123", displayName: "Admin" });
+    expect(admin.body.user.role).toBe("admin");
     for (const d of [today(), addDays(today(), -3)]) {
-      const fx = await call("POST", "/api/fx-rates", token, {
+      const fx = await call("POST", "/api/fx-rates", admin.body.token, {
         baseCurrency: "EUR",
         quoteCurrency: "USD",
         rate: 1.1,

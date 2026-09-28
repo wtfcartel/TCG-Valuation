@@ -13,7 +13,7 @@ const config = loadConfig();
 if (process.env.NODE_ENV === "production") throw new Error("Refusing to seed demo data in production");
 const pool = createPool(config.databaseUrl);
 await migrate(pool, config);
-const app = await buildApp({ config: { ...config, enableDemoSource: true }, pool });
+const app = await buildApp({ config: { ...config, enableDemoSource: true, adminEmails: [...config.adminEmails, "demo@cardcore.local"] }, pool });
 
 async function call(method: string, url: string, token?: string, payload?: unknown) {
   const res = await app.inject({

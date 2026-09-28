@@ -4,6 +4,8 @@ import { audit } from "../audit.js";
 import { many, one } from "../db.js";
 import { getValuation } from "../services/valuation.js";
 import { HttpError, notFound } from "../errors.js";
+import { requireRole } from "../auth.js";
+import { importEcbRates } from "../services/ecb.js";
 import { PokeTraceAdapter, PokeTraceError } from "../sources/poketrace.js";
 import { assertAssetAccess, assertValuationAccess, currency, isoDate, minor, parse, user, uuid, type AppContext } from "./context.js";
 
@@ -44,8 +46,9 @@ export async function valuationRoutes(app: FastifyInstance, ctx: AppContext) {
     return many(ctx.pool, `SELECT * FROM fx_rates ORDER BY rate_date DESC, base_currency, quote_currency LIMIT 500`);
   });
 
+  // FX rates are shared by every valuation, so only valuers/admins may record them.
   app.post("/api/fx-rates", async (req, reply) => {
-    const u = user(req);
+    const u = requireRole(req, "valuer", "admin");
     const b = parse(
       z.object({
         baseCurrency: currency,
@@ -65,6 +68,27 @@ export async function valuationRoutes(app: FastifyInstance, ctx: AppContext) {
     );
     if (row) await audit(ctx.pool, u.id, "fx_rate.recorded", "fx_rate", (row as { id: string }).id, b, req.id);
     return reply.code(row ? 201 : 200).send(row ?? { duplicate: true });
+  });
+
+  app.post("/api/fx-rates/import-ecb", async (req, reply) => {
+    const u = requireRole(req, "valuer", "admin");
+    const b = parse(z.object({ feed: z.enum(["daily", "last90Days", "full"]).default("daily") }), req.body ?? {});
+    try {
+      const result = await importEcbRates(ctx.pool, b.feed);
+      await audit(ctx.pool, u.id, "fx_rate.ecb_imported", "fx_rate", b.feed, { ...result }, req.id);
+      return reply.code(201).send(result);
+    } catch (error) {
+      throw new HttpError(502, `ECB import failed: ${(error as Error).message}`, "upstream_error");
+    }
+  });
+
+  app.get("/api/fx-rates/latest", async (req) => {
+    user(req);
+    return many(
+      ctx.pool,
+      `SELECT DISTINCT ON (base_currency, quote_currency) base_currency, quote_currency, rate, rate_date, source
+       FROM fx_rates ORDER BY base_currency, quote_currency, rate_date DESC, fetched_at DESC`,
+    );
   });
 
   // ───────────── Reference data & audit ─────────────
