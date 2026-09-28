@@ -8,6 +8,8 @@ export interface Config {
   enableDemoSource: boolean;
   enableTcgdex: boolean;
   webDistDir: string | null;
+  poketraceApiKey: string | null;
+  poketraceCommercialLicence: boolean;
 }
 
 function bool(value: string | undefined, fallback: boolean): boolean {
@@ -38,5 +40,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     enableDemoSource: bool(env.ENABLE_DEMO_SOURCE, !production),
     enableTcgdex: bool(env.ENABLE_TCGDEX, true),
     webDistDir: env.WEB_DIST_DIR ?? null,
+    poketraceApiKey: env.POKETRACE_API_KEY || null,
+    poketraceCommercialLicence: bool(env.POKETRACE_COMMERCIAL_LICENCE, false),
   };
 }

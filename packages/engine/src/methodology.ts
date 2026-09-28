@@ -1,6 +1,6 @@
 import type { MethodologyParameters } from "./types.js";
 
-export const CSM_VERSION = "CSM-1.0.0";
+export const CSM_VERSION = "CSM-1.1.0";
 
 /**
  * Cardcore Comparable Sales Method v1.0.0 — default parameters.
@@ -25,6 +25,20 @@ export const CSM_1_0_0_PARAMETERS: MethodologyParameters = {
     moderateMaxMedianAgeDays: 365,
   },
 };
+
+/**
+ * CSM-1.1.0 (effective 2026-09-28): identical to 1.0.0 except that a transaction evidenced by
+ * several sources (e.g. the same eBay sale via a data vendor and a saved page) is used once.
+ */
+export const CSM_1_1_0_PARAMETERS: MethodologyParameters = {
+  ...CSM_1_0_0_PARAMETERS,
+  deduplicateTransactions: true,
+};
+
+export const METHODOLOGY_VERSIONS = [
+  { id: "CSM-1.0.0", effectiveFrom: "2026-09-26", parameters: CSM_1_0_0_PARAMETERS, documentRef: "docs/methodology/CSM-1.0.0.md" },
+  { id: "CSM-1.1.0", effectiveFrom: "2026-09-28", parameters: CSM_1_1_0_PARAMETERS, documentRef: "docs/methodology/CSM-1.1.0.md" },
+] as const;
 
 export function validateParameters(p: MethodologyParameters): string[] {
   const errors: string[] = [];

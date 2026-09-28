@@ -12,7 +12,7 @@ Cardcore is a live **asset register and valuation ledger** for trading-card coll
 | [02 — Architecture, database schema, API](docs/02-architecture.md) | Three separated layers; append-only invariants; endpoint map |
 | [03 — Licensing & IP risk register](docs/03-licensing-and-ip.md) | AGPL, game IP, market-data rights, professional representation |
 | [04 — Data sources](docs/04-data-sources.md) | Which valuation sources are accessible and legally reusable |
-| [Methodology CSM-1.0.0](docs/methodology/CSM-1.0.0.md) | The valuation rules the engine implements |
+| [Methodology CSM-1.0.0](docs/methodology/CSM-1.0.0.md) · [CSM-1.1.0](docs/methodology/CSM-1.1.0.md) | The valuation rules the engine implements (1.1.0 adds cross-source de-duplication) |
 
 ## Repository layout
 

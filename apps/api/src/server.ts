@@ -4,7 +4,7 @@ import { createPool, migrate } from "./db.js";
 
 const config = loadConfig();
 const pool = createPool(config.databaseUrl);
-await migrate(pool);
+await migrate(pool, config);
 const app = await buildApp({ config, pool, logger: true });
 
 const shutdown = async () => {

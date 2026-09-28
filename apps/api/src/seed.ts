@@ -12,7 +12,7 @@ import { today } from "./services/valuation.js";
 const config = loadConfig();
 if (process.env.NODE_ENV === "production") throw new Error("Refusing to seed demo data in production");
 const pool = createPool(config.databaseUrl);
-await migrate(pool);
+await migrate(pool, config);
 const app = await buildApp({ config: { ...config, enableDemoSource: true }, pool });
 
 async function call(method: string, url: string, token?: string, payload?: unknown) {

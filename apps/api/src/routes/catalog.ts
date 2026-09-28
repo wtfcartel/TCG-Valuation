@@ -65,6 +65,22 @@ export async function catalogRoutes(app: FastifyInstance, ctx: AppContext) {
     return reply.code(result.created ? 201 : 200).send(row);
   });
 
+  // Link a catalogue entry to an external source's ID (e.g. {"poketrace": "<card uuid>"}). Audited; merges keys.
+  app.patch("/api/catalog/cards/:id/external-refs", async (req) => {
+    const u = user(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const refs = parse(z.record(z.string().min(1).max(200)), req.body);
+    const row = await one<{ external_refs: Record<string, string> }>(ctx.pool, `SELECT external_refs FROM card_identities WHERE id = $1`, [id]);
+    if (!row) throw badRequest("Unknown card identity");
+    const updated = await one(
+      ctx.pool,
+      `UPDATE card_identities SET external_refs = external_refs || $2::jsonb WHERE id = $1 RETURNING *`,
+      [id, JSON.stringify(refs)],
+    );
+    await audit(ctx.pool, u.id, "card_identity.external_refs_set", "card_identity", id, { previous: row.external_refs, set: refs }, req.id);
+    return updated;
+  });
+
   app.get("/api/catalog/remote", async (req) => {
     user(req);
     const q = parse(z.object({ source: z.string().default("tcgdex"), q: z.string().min(2), language: z.string().default("en") }), req.query);

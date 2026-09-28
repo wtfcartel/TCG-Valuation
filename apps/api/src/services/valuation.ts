@@ -30,6 +30,8 @@ interface ObservationRow {
   buyers_premium_minor: number;
   arms_length: boolean | null;
   verification_status: Observation["verificationStatus"];
+  licence_status: string;
+  reliability_tier: number;
   game: string;
   product_type: "single" | "sealed";
   set_code: string;
@@ -63,7 +65,7 @@ export async function currentMethodology(db: Queryable, onDate: string) {
 export async function loadObservations(db: Queryable, cardIdentityId: string, ownerUserId: string): Promise<ObservationRow[]> {
   return many<ObservationRow>(
     db,
-    `SELECT po.*, ds.licence_status, ci.game, ci.product_type, ci.set_code, ci.card_number, ci.language, ci.edition, ci.variant
+    `SELECT po.*, ds.licence_status, ds.reliability_tier, ci.game, ci.product_type, ci.set_code, ci.card_number, ci.language, ci.edition, ci.variant
      FROM price_observations po
      JOIN card_identities ci ON ci.id = po.card_identity_id
      JOIN data_sources ds ON ds.id = po.source_id
@@ -74,8 +76,14 @@ export async function loadObservations(db: Queryable, cardIdentityId: string, ow
   );
 }
 
+/** Preference when one transaction is evidenced by several sources: licensed/open first, scraped last. */
+const LICENCE_RANK: Record<string, number> = { licensed: 0, open: 1, user_supplied: 2, synthetic: 3, unlicensed: 4, restricted: 5 };
+
 function toObservation(r: ObservationRow): Observation {
   return {
+    // Marketplace transaction IDs are shared across sources (e.g. "ebay:<item id>").
+    transactionKey: /^ebay:\d+$/.test(r.source_reference) ? r.source_reference : null,
+    sourcePriority: (LICENCE_RANK[r.licence_status] ?? 9) * 10 + r.reliability_tier,
     id: r.id,
     sourceId: r.source_id,
     sourceReference: r.source_reference,

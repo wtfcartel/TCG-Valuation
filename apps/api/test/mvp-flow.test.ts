@@ -174,7 +174,7 @@ describe("Cardcore Phase 1 flow", () => {
     expect(v.status).toBe(201);
     marketValuationId = v.body.id;
     expect(v.body.status).toBe("concluded");
-    expect(v.body.methodology_version_id).toBe("CSM-1.0.0");
+    expect(v.body.methodology_version_id).toBe("CSM-1.1.0");
     expect(["high", "moderate", "limited"]).toContain(v.body.confidence);
     const included = v.body.comparables.filter((c: { included: boolean }) => c.included);
     expect(included.length).toBeGreaterThanOrEqual(3);
@@ -334,6 +334,18 @@ describe("Cardcore Phase 1 flow", () => {
     const used = v.body.comparables.filter((c: { included: boolean }) => c.included);
     expect(used.every((c: { source_id: string; licence_status: string }) => c.source_id === "ebay_sold_scrape" && c.licence_status === "unlicensed")).toBe(true);
     expect(v.body.unit_value_minor).toBe(16_950);
+
+    // The same eBay sale also arriving via another source is used once, preferring the non-scraped copy.
+    const csv = await call("POST", `/api/assets/${asset2Id}/evidence/csv`, token, {
+      csv: "sale_date,venue,amount,currency,source_reference,source_url,condition,arms_length,verified\n" +
+        `${addDays(today(), -1)},eBay,171.00,USD,ebay:400000000001,https://www.ebay.com/itm/400000000001,NM,yes,yes\n`,
+    });
+    expect(csv.status).toBe(201);
+    const v2 = await call("POST", `/api/assets/${asset2Id}/valuations`, token, { purpose: "market" });
+    const dups = v2.body.comparables.filter((c: { rejection_code: string }) => c.rejection_code === "DUPLICATE_TRANSACTION");
+    expect(dups).toHaveLength(1);
+    expect(dups[0].source_id).toBe("ebay_sold_scrape");
+    expect(v2.body.unit_value_minor).toBe(16_950);
   });
 
   it("generates an immutable, hashed valuation report and PDF", async () => {
@@ -343,7 +355,7 @@ describe("Cardcore Phase 1 flow", () => {
     expect(rep.status).toBe(201);
     expect(rep.body.sha256).toMatch(/^[0-9a-f]{64}$/);
     expect(rep.body.payload.methodology.reviewStatement).toMatch(/has not been independently reviewed/);
-    expect(rep.body.payload.evidenceProvenance).toMatch(/UNLICENSED \/ SCRAPED EVIDENCE: 3 comparable/);
+    expect(rep.body.payload.evidenceProvenance).toMatch(/UNLICENSED \/ SCRAPED EVIDENCE: 2 comparable/);
     const json = await call("GET", `/api/reports/${rep.body.id}`, token);
     expect(json.body.integrity.verified).toBe(true);
     const pdf = await call("GET", `/api/reports/${rep.body.id}/pdf`, token);

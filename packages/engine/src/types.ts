@@ -46,6 +46,13 @@ export interface Observation {
   buyersPremiumMinor: number;
   armsLength: boolean | null;
   verificationStatus: VerificationStatus;
+  /**
+   * Identifies the underlying transaction across sources (e.g. "ebay:<item id>"). When the same
+   * transaction arrives from several sources only one copy is used — the lowest `sourcePriority`.
+   */
+  transactionKey?: string | null;
+  /** Lower is preferred when de-duplicating (e.g. licensed feed before scraped page). */
+  sourcePriority?: number;
 }
 
 export interface FxQuote {
@@ -85,6 +92,8 @@ export interface MethodologyParameters {
   fxMaxStalenessDays: number;
   /** Maximum grade steps between subject and a secondary comparable. */
   secondaryMaxGradeSteps: number;
+  /** CSM ≥ 1.1: use only one copy of a transaction evidenced by several sources. Absent = false. */
+  deduplicateTransactions?: boolean;
   confidence: {
     highMaxMedianAgeDays: number;
     highMinLiquidity90d: number;
@@ -104,6 +113,7 @@ export type RejectionCode =
   | "IDENTITY_MISMATCH"
   | "NO_FX_RATE"
   | "OUTSIDE_WINDOW"
+  | "DUPLICATE_TRANSACTION"
   | "NOT_SELECTED_OLDER"
   | "MANUAL_EXCLUSION";
 

@@ -2,8 +2,8 @@ import { readdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { CSM_1_0_0_PARAMETERS, CSM_VERSION } from "@cardcore/engine";
-import { SOURCE_DEFINITIONS } from "./sources/definitions.js";
+import { METHODOLOGY_VERSIONS } from "@cardcore/engine";
+import { sourceDefinitions } from "./sources/definitions.js";
 
 // Return bigint / numeric columns as JS numbers. Minor-unit amounts stay far below 2^53.
 pg.types.setTypeParser(20, (v) => Number(v)); // int8
@@ -49,7 +49,7 @@ function migrationsDir(): string {
   return join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 }
 
-export async function migrate(pool: pg.Pool): Promise<string[]> {
+export async function migrate(pool: pg.Pool, opts: { poketraceCommercialLicence?: boolean } = {}): Promise<string[]> {
   await pool.query(`CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
   const applied = new Set((await many<{ name: string }>(pool, "SELECT name FROM schema_migrations")).map((r) => r.name));
   const files = (await readdir(migrationsDir())).filter((f) => f.endsWith(".sql")).sort();
@@ -63,13 +63,18 @@ export async function migrate(pool: pg.Pool): Promise<string[]> {
     });
     ran.push(file);
   }
-  await ensureReferenceData(pool);
+  await ensureReferenceData(pool, opts);
   return ran;
 }
 
-/** Idempotently register data sources and the current methodology version. */
-export async function ensureReferenceData(pool: pg.Pool): Promise<void> {
-  for (const s of SOURCE_DEFINITIONS) {
+const METHODOLOGY_SUMMARY =
+  "Mean of the three most recent verified arm's-length completed sales of the closest equivalent asset, with dispersion-triggered " +
+  "escalation to 5–10 transactions, documented exclusions, progressive window widening and secondary comparables for thin markets, " +
+  "and a transparent evidence-based confidence classification.";
+
+/** Idempotently register data sources and every methodology version. */
+export async function ensureReferenceData(pool: pg.Pool, opts: { poketraceCommercialLicence?: boolean } = {}): Promise<void> {
+  for (const s of sourceDefinitions(opts)) {
     await pool.query(
       `INSERT INTO data_sources (id, name, provides, licence_status, licence_notes, reliability_tier)
        VALUES ($1, $2, $3, $4, $5, $6)
@@ -78,16 +83,20 @@ export async function ensureReferenceData(pool: pg.Pool): Promise<void> {
       [s.id, s.name, s.provides, s.licenceStatus, s.licenceNotes, s.reliabilityTier],
     );
   }
-  await pool.query(
-    `INSERT INTO methodology_versions (id, name, summary, parameters, document_ref, effective_from)
-     VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO NOTHING`,
-    [
-      CSM_VERSION,
-      "Cardcore Comparable Sales Method",
-      "Mean of the three most recent verified arm's-length completed sales of the closest equivalent asset, with dispersion-triggered escalation to 5–10 transactions, documented exclusions, progressive window widening and secondary comparables for thin markets, and a transparent evidence-based confidence classification.",
-      JSON.stringify(CSM_1_0_0_PARAMETERS),
-      "docs/methodology/CSM-1.0.0.md",
-      "2026-09-26",
-    ],
-  );
+  for (const m of METHODOLOGY_VERSIONS) {
+    await pool.query(
+      `INSERT INTO methodology_versions (id, name, summary, parameters, document_ref, effective_from)
+       VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO NOTHING`,
+      [
+        m.id,
+        "Cardcore Comparable Sales Method",
+        m.parameters.deduplicateTransactions
+          ? `${METHODOLOGY_SUMMARY} A transaction evidenced by several sources is used once.`
+          : METHODOLOGY_SUMMARY,
+        JSON.stringify(m.parameters),
+        m.documentRef,
+        m.effectiveFrom,
+      ],
+    );
+  }
 }

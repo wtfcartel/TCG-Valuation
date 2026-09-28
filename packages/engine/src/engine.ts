@@ -49,6 +49,17 @@ function screen(input: ValuationInput): { eligible: Candidate[]; rejected: Compa
     (a, b) => b.observedAt.localeCompare(a.observedAt) || a.id.localeCompare(b.id),
   );
 
+  // One copy per underlying transaction: the preferred source wins, ties broken by id.
+  const preferred = new Map<string, Observation>();
+  for (const obs of input.parameters.deduplicateTransactions ? input.observations : []) {
+    if (!obs.transactionKey) continue;
+    const current = preferred.get(obs.transactionKey);
+    const rank = (o: Observation) => o.sourcePriority ?? Number.MAX_SAFE_INTEGER;
+    if (!current || rank(obs) < rank(current) || (rank(obs) === rank(current) && obs.id < current.id)) {
+      preferred.set(obs.transactionKey, obs);
+    }
+  }
+
   for (const obs of sorted) {
     const ageDays = daysBetween(obs.observedAt, input.valuationDate);
     let record: ComparableRecord = {
@@ -72,6 +83,13 @@ function screen(input: ValuationInput): { eligible: Candidate[]; rejected: Compa
       rejection: null,
     };
 
+    const winner = obs.transactionKey ? preferred.get(obs.transactionKey) : undefined;
+    if (winner && winner.id !== obs.id) {
+      rejected.push(
+        reject(record, "DUPLICATE_TRANSACTION", `Same transaction (${obs.transactionKey}) is already evidenced via source '${winner.sourceId}'`),
+      );
+      continue;
+    }
     if (obs.kind !== "completed_sale") {
       rejected.push(reject(record, "NOT_COMPLETED_SALE", `Observation is a ${obs.kind.replace("_", " ")}, not a completed sale`));
       continue;

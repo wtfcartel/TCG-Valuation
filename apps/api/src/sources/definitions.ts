@@ -12,7 +12,7 @@ export interface SourceDefinition {
   reliabilityTier: 1 | 2 | 3;
 }
 
-export const SOURCE_DEFINITIONS: SourceDefinition[] = [
+const BASE_DEFINITIONS: SourceDefinition[] = [
   {
     id: "manual",
     name: "Manually recorded evidence",
@@ -112,3 +112,26 @@ export const SOURCE_DEFINITIONS: SourceDefinition[] = [
     reliabilityTier: 1,
   },
 ];
+
+/**
+ * PokeTrace is only recorded as licensed when the operator confirms a commercial plan; until then its
+ * evidence is treated as evaluation-tier (unlicensed) and disclosed as such in reports.
+ */
+export function sourceDefinitions(opts: { poketraceCommercialLicence?: boolean } = {}): SourceDefinition[] {
+  return [
+    ...BASE_DEFINITIONS,
+    {
+      id: "poketrace",
+      name: "PokeTrace API",
+      provides: ["catalogue", "completed_sale", "price_guide"],
+      licenceStatus: opts.poketraceCommercialLicence ? "licensed" : "unlicensed",
+      licenceNotes: opts.poketraceCommercialLicence
+        ? "Commercial PokeTrace plan confirmed by the operator. Individual eBay sold listings (Pro plan) are used as evidence; rolling averages are price guides only."
+        : "Evaluation use: commercial-use terms of the key's plan not yet confirmed (set POKETRACE_COMMERCIAL_LICENCE=true once they are). PokeTrace does not state how it obtains eBay data.",
+      reliabilityTier: 1,
+    },
+  ];
+}
+
+/** Static list (PokeTrace shown as evaluation-tier) for places that have no configuration. */
+export const SOURCE_DEFINITIONS: SourceDefinition[] = sourceDefinitions();

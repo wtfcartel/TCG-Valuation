@@ -1,6 +1,7 @@
 import { describe as suite, expect, it } from "vitest";
 import {
   CSM_1_0_0_PARAMETERS,
+  CSM_1_1_0_PARAMETERS,
   CSM_VERSION,
   describe,
   valuate,
@@ -229,6 +230,20 @@ suite("comparable sales method", () => {
     );
     expect(raw.confidence.classification).toBe("moderate");
     expect(raw.confidence.reasons.join(" ")).toMatch(/owner-assessed/);
+  });
+
+  it("uses one copy of a transaction reported by several sources, preferring the better source", () => {
+    const a = sale(100_00, "2026-08-25", { transactionKey: "ebay:1", sourceId: "scrape", sourcePriority: 3 });
+    const b = sale(100_00, "2026-08-25", { transactionKey: "ebay:1", sourceId: "licensed", sourcePriority: 0 });
+    const obs = [a, b, sale(102_00, "2026-08-20"), sale(104_00, "2026-08-15")];
+    // CSM-1.0.0 had no de-duplication: reproducing an old valuation must not change it.
+    expect(valuate(input(obs)).statistics?.count).toBe(3);
+    expect(valuate(input(obs)).comparables.some((c) => c.rejection?.code === "DUPLICATE_TRANSACTION")).toBe(false);
+    const r = valuate(input(obs, { parameters: CSM_1_1_0_PARAMETERS }));
+    expect(r.statistics?.count).toBe(3);
+    const dup = r.comparables.find((c) => c.observationId === a.id)!;
+    expect(dup.rejection?.code).toBe("DUPLICATE_TRANSACTION");
+    expect(r.comparables.find((c) => c.observationId === b.id)?.included).toBe(true);
   });
 
   it("is deterministic (same inputs → same hash)", () => {

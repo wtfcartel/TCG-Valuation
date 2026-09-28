@@ -23,9 +23,9 @@ export const LIMITATIONS = [
 export function provenanceStatement(unlicensedCount: number): string | null {
   if (unlicensedCount === 0) return null;
   return (
-    `UNLICENSED / SCRAPED EVIDENCE: ${unlicensedCount} comparable sale(s) relied on in this report were collected from public marketplace ` +
-    `pages without a data licence from the marketplace operator. They are marked individually in the evidence schedule. The recipient ` +
-    `should weigh this provenance when relying on the values concluded.`
+    `UNLICENSED / SCRAPED EVIDENCE: ${unlicensedCount} comparable sale(s) relied on in this report were obtained without a commercial ` +
+    `data licence — collected from public marketplace pages, or from a data API used under evaluation terms. They are marked ` +
+    `individually in the evidence schedule. The recipient should weigh this provenance when relying on the values concluded.`
   );
 }
 

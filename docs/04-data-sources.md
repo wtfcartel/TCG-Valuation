@@ -19,6 +19,20 @@ Status below reflects what is publicly known and what the reference projects act
 | **Commercial sales-data vendors** (e.g. Card Ladder, Alt, 130point, CardHedger, PokemonPriceTracker, JustTCG) | Varies: some provide transaction-level sold data, others aggregates | Paid APIs | Licence terms decide whether per-transaction data can go into reports **(verify each)** | Implement as new `SourceAdapter`s once licensed |
 | **ECB euro reference rates** | Daily FX | Free, public | Free reuse with attribution | Recommended FX source; add a scheduled importer (Phase 2). Manual/API entry exists now (`POST /api/fx-rates`) |
 
+## PokeTrace (integrated)
+
+Adapter `poketrace`, built against the request/response shapes of the MIT-licensed [official SDK](https://github.com/PokeTrace/sdk).
+
+| Plan | What Cardcore stores |
+|---|---|
+| Free (250 requests/day, US raw cards per their site) | eBay and TCGplayer rolling averages for the subject's tier, as `price_guide` (context only, never comparables) |
+| Pro and above | Individual eBay sold listings as `completed_sale`, with the eBay item ID as transaction key. PokeTrace's `anomalyFlag` → verification `failed` (rejected with PokeTrace's reason); best-offer listings → `unverified` |
+
+- **Card matching:** search by name and number, then pick the printing by variant and set (for example 1st Edition vs Unlimited Holofoil). If ambiguous, the import fails and lists the candidates. Set the right one with `PATCH /api/catalog/cards/:id/external-refs {"poketrace": "<id>"}`.
+- **Licence status** is `unlicensed` (evaluation) until the operator sets `POKETRACE_COMMERCIAL_LICENCE=true` after confirming the plan permits commercial use. Until then, reports disclose PokeTrace evidence in the provenance statement. PokeTrace does not publish how it obtains eBay data; ask before relying on it commercially.
+- **Duplicates:** the same eBay sale from PokeTrace and from a saved page is used once (CSM-1.1.0).
+- **Not verified live:** this environment's network policy blocks api.poketrace.com, so the adapter is tested against a mocked API only.
+
 ## Unlicensed / scraped evidence (business-accepted risk)
 
 On 2026-09-26 the product owner chose to use eBay sold-listing data without a licence from eBay, accepting the risk of a cease-and-desist.
