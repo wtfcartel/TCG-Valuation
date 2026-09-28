@@ -32,13 +32,20 @@ function loadDotEnv(): void {
   }
 }
 
+/** A configuration problem the operator must fix; its message is safe to show (never contains secrets). */
+export class StartupError extends Error {}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   if (env === process.env) loadDotEnv();
   const production = env.NODE_ENV === "production";
   const jwtSecret = env.JWT_SECRET ?? (production ? "" : "dev-only-insecure-secret-change-me");
-  if (jwtSecret.length < 16) throw new Error("JWT_SECRET must be set to at least 16 characters");
+  if (jwtSecret.length < 16) throw new StartupError("JWT_SECRET is not set (or is shorter than 16 characters) in the environment variables");
   return {
-    databaseUrl: env.DATABASE_URL ?? "postgres://cardcore:cardcore@localhost:5432/cardcore",
+    // DATABASE_URL (Neon, Docker, local); POSTGRES_URL is what some Vercel Postgres integrations set.
+    databaseUrl:
+      env.DATABASE_URL ||
+      env.POSTGRES_URL ||
+      (production ? "" : "postgres://cardcore:cardcore@localhost:5432/cardcore"),
     jwtSecret,
     port: Number(env.PORT ?? 8080),
     photoStorageDir: env.PHOTO_STORAGE_DIR ?? "./storage/photos",
