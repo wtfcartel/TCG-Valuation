@@ -88,6 +88,28 @@ Everything else needs a licence. The adapter interface (`apps/api/src/sources/ty
 
 **Recommended order:** PSA cert verification (after the owner signs up), then the Scryfall, YGOPRODeck and OPTCG catalogue adapters. Each is one `SourceAdapter` file plus a registry line. Frankfurter and Lorcast only if needed.
 
+## Paid and application-only sources: fees and access (checked 2026-09-28)
+
+Published prices, in USD, per month. Nothing here was bought or tested. Confirm each price and licence on the vendor's site before paying.
+
+| Source | Cost | Commercial use | Individual sold prices (comparables)? | How to get access |
+|---|---|---|---|---|
+| **PokeTrace** | Pro $19.99 · Growth $49.99 · Scale $98 | Confirm per plan (Cardcore flag `POKETRACE_COMMERCIAL_LICENCE`) | **Scale only**: eBay sold listings (Pokémon) | Self-serve upgrade in dashboard; already integrated |
+| **PokemonPriceTracker** | API $9.99 · Business $99 | Business plan only | No: prices, history, eBay listings in daily exports **(verify)** | Self-serve sign-up |
+| **JustTCG** | $19 (10k calls) · $49 (50k calls) | Paid plans include a commercial licence; no reselling the raw feed | No: aggregates | Self-serve sign-up |
+| **tcgapi.dev** | Pro $49.99 · Business $99.99 | Pro and above | No: aggregates | Self-serve sign-up |
+| **CardHedger** | From $49, 7-day trial | **(verify)** | Sales data claimed **(verify)** | Self-serve sign-up |
+| **PriceCharting** | API needs the top paid tier (consumer subscriptions from about $6/mo; confirm which tier includes the API) | Redistribution terms **(verify)** | No: grade-level price guide | Self-serve subscription |
+| **Card Ladder** | App $20/mo; business API by quote only | By agreement | Sales database back to 2000 | Contact sales |
+| **eBay Marketplace Insights** | No application fee | Under eBay's licence agreement | **Yes**: 90 days of transaction-level sold data | Application to eBay; currently "not open to new users", approval favours established businesses |
+| **Cardmarket API** | n/a | n/a | No | **Not accepting applications** |
+| **TCGplayer API** | n/a | n/a | No | **No new keys** granted |
+| **PSA population / APR** | By agreement | By agreement | APR is auction results | Partnership enquiry; the free cert API is separate |
+| **Heritage / Goldin / other auction houses** | No public API | By agreement | Yes (lot results) | Data-licensing enquiry per house. Individual lots can still be cited manually |
+| **130point** | No official API; third-party wrappers charge per call | Wrappers are scrapers, so treat as `unlicensed` | Yes (eBay, Goldin, Heritage, etc.) | Not an official channel |
+
+**Cheapest licensed route to real comparables:** PokeTrace Scale at $98/mo, for Pokémon only. For every game, the options are eBay Marketplace Insights (free, but approval is unlikely for an early-stage product), a Card Ladder or CardHedger agreement, or the scraped eBay route above.
+
 ## Per-observation metadata captured (all sources)
 
 `source_id` (with licence status and reliability tier on `data_sources`), `source_reference` (transaction ID/lot), `source_url`, `observed_at` (sale date), `fetched_at`, `currency`, `amount_minor`, `buyers_premium_minor`, `arms_length`, `verification_status` (+ notes), `observation_kind`, and `raw_payload` (the unmodified source record).
