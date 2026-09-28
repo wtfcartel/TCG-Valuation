@@ -10,6 +10,7 @@ import type { SourceRegistry } from "../sources/registry.js";
 
 export interface AppContext {
   config: Config;
+  photos: import("../services/photo-store.js").PhotoStore;
   pool: Db;
   tokens: TokenService;
   sources: SourceRegistry;

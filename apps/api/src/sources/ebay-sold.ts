@@ -223,7 +223,7 @@ export function ebayPageToObservations(
   const observations: SourcedObservation[] = [];
   for (const l of listings) {
     const m = matchListing(identity, l);
-    if (!m.matched) {
+    if ("reason" in m) {
       skipped[m.reason] = (skipped[m.reason] ?? 0) + 1;
       continue;
     }

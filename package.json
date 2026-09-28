@@ -20,7 +20,7 @@
     "test:e2e": "playwright test -c e2e/playwright.config.ts"
   },
   "engines": {
-    "node": ">=22"
+    "node": "22.x"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1"

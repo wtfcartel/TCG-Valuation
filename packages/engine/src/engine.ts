@@ -99,7 +99,7 @@ function screen(input: ValuationInput): { eligible: Candidate[]; rejected: Compa
       continue;
     }
     const match = matchComparable(input.subject, obs.descriptor, p.secondaryMaxGradeSteps);
-    if (!match.matched) {
+    if ("detail" in match) {
       rejected.push(reject(record, "IDENTITY_MISMATCH", match.detail));
       continue;
     }

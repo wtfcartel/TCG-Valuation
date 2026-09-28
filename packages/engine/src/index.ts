@@ -1,4 +1,4 @@
-export * from "./types.js";
+export type * from "./types.js";
 export { valuate } from "./engine.js";
 export { describe, median, deviationPct } from "./stats.js";
 export { matchComparable, normaliseCondition } from "./matching.js";

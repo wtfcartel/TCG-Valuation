@@ -5,6 +5,10 @@ export interface Config {
   jwtSecret: string;
   port: number;
   photoStorageDir: string;
+  /** "vercel-blob" on Vercel (no persistent disk); "local" elsewhere. */
+  photoStorage: "local" | "vercel-blob";
+  /** Vercel Cron sends `Authorization: Bearer <CRON_SECRET>`; cron routes are disabled when unset. */
+  cronSecret: string | null;
   enableDemoSource: boolean;
   enableTcgdex: boolean;
   webDistDir: string | null;
@@ -38,6 +42,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     jwtSecret,
     port: Number(env.PORT ?? 8080),
     photoStorageDir: env.PHOTO_STORAGE_DIR ?? "./storage/photos",
+    photoStorage: env.PHOTO_STORAGE === "vercel-blob" || (env.VERCEL && env.PHOTO_STORAGE !== "local") ? "vercel-blob" : "local",
+    cronSecret: env.CRON_SECRET && env.CRON_SECRET.length >= 16 ? env.CRON_SECRET : null,
     enableDemoSource: bool(env.ENABLE_DEMO_SOURCE, !production),
     enableTcgdex: bool(env.ENABLE_TCGDEX, true),
     webDistDir: env.WEB_DIST_DIR ?? null,

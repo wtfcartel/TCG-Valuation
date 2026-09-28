@@ -1,7 +1,4 @@
 import { createHash, randomUUID } from "node:crypto";
-import { createReadStream } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { audit } from "../audit.js";
@@ -205,8 +202,7 @@ export async function assetRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!["image/jpeg", "image/png", "image/webp", "image/heic"].includes(file.mimetype)) throw badRequest("Unsupported image type");
     const buffer = await file.toBuffer();
     const storageKey = `${id}/${randomUUID()}`;
-    await mkdir(join(ctx.config.photoStorageDir, id), { recursive: true });
-    await writeFile(join(ctx.config.photoStorageDir, storageKey), buffer);
+    await ctx.photos.put(storageKey, buffer, file.mimetype);
     const sha256 = createHash("sha256").update(buffer).digest("hex");
     const caption = (file.fields.caption as { value?: string } | undefined)?.value ?? null;
     const row = await one(
@@ -229,7 +225,7 @@ export async function assetRoutes(app: FastifyInstance, ctx: AppContext) {
     );
     if (!photo) throw notFound("Photo");
     await assertAssetAccess(ctx.pool, u, photo.asset_id);
-    return reply.type(photo.content_type).send(createReadStream(join(ctx.config.photoStorageDir, photo.storage_key)));
+    return reply.type(photo.content_type).header("Cache-Control", "private, no-store").send(await ctx.photos.get(photo.storage_key));
   });
 
   // ───────────── Evidence (market-data layer) ─────────────
@@ -394,7 +390,7 @@ export async function assetRoutes(app: FastifyInstance, ctx: AppContext) {
       assetId: id,
       purpose: b.purpose,
       valuationDate: b.valuationDate,
-      exclusions: b.exclusions,
+      exclusions: b.exclusions as Array<{ observationId: string; reason: string }>,
       supersedesValuationId: b.supersedesValuationId,
       userId: u.id,
       requestId: req.id,

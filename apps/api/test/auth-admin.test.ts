@@ -24,7 +24,7 @@ beforeAll(async () => {
   pool = createPool(DATABASE_URL);
   await pool.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
   await migrate(pool);
-  const config = { ...loadConfig({ NODE_ENV: "test" } as NodeJS.ProcessEnv), databaseUrl: DATABASE_URL };
+  const config = { ...loadConfig({ NODE_ENV: "test" } as NodeJS.ProcessEnv), databaseUrl: DATABASE_URL, cronSecret: "cron-secret-0123456789" };
   app = await buildApp({ config, pool });
 });
 afterAll(async () => {
@@ -98,6 +98,14 @@ describe("accounts, roles and sessions", () => {
     expect((await call("GET", "/api/me", collector)).status).toBe(401); // the pre-change token is revoked too
     collector = changed.body.token;
     expect((await call("GET", "/api/me", other)).status).toBe(401);
+  });
+
+  it("guards cron routes with CRON_SECRET (Vercel Cron's Bearer header), independent of user sessions", async () => {
+    expect((await call("GET", "/api/cron/ecb")).status).toBe(401);
+    expect((await call("GET", "/api/cron/ecb", admin)).status).toBe(401); // a user session is not the cron secret
+    expect((await call("GET", "/api/cron/ecb", "cron-secret-wrong-000000")).status).toBe(401);
+    // Correct secret passes authorisation; the ECB fetch itself then fails offline (not 401).
+    expect((await call("GET", "/api/cron/ecb", "cron-secret-0123456789")).status).not.toBe(401);
   });
 
   it("rate-limits repeated failed logins", async () => {

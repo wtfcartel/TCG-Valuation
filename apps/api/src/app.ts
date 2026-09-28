@@ -17,21 +17,26 @@ import { reportRoutes } from "./routes/reports.js";
 import { valuationRoutes } from "./routes/valuations.js";
 import { adminRoutes } from "./routes/admin.js";
 import { createRegistry, type SourceRegistry } from "./sources/registry.js";
+import { createPhotoStore } from "./services/photo-store.js";
+import { cronRoutes } from "./routes/cron.js";
 
 export async function buildApp(opts: { config: Config; pool: Db; sources?: SourceRegistry; logger?: boolean; trustProxy?: boolean }): Promise<FastifyInstance> {
   // trustProxy: behind a hosting provider's load balancer, req.ip must come from X-Forwarded-For for rate limiting.
-  const app = Fastify({ logger: opts.logger ?? false, bodyLimit: 10 * 1024 * 1024, trustProxy: opts.trustProxy ?? false });
+  const app = Fastify({ logger: opts.logger ?? false, bodyLimit: process.env.VERCEL ? 4 * 1024 * 1024 : 10 * 1024 * 1024, trustProxy: opts.trustProxy ?? false });
   const ctx: AppContext = {
     config: opts.config,
     pool: opts.pool,
     tokens: new TokenService(opts.config.jwtSecret),
     sources: opts.sources ?? createRegistry(opts.config),
+    photos: createPhotoStore(opts.config),
   };
 
   await app.register(multipart, { limits: { fileSize: 15 * 1024 * 1024, files: 1 } });
 
   app.addHook("onRequest", async (req) => {
     const header = req.headers.authorization;
+    // Cron routes authenticate with CRON_SECRET in the same header (Vercel Cron), not a user session.
+    if (req.url.startsWith("/api/cron/")) return;
     if (header?.startsWith("Bearer ")) {
       let claims;
       try {
@@ -93,6 +98,7 @@ export async function buildApp(opts: { config: Config; pool: Db; sources?: Sourc
   await insuranceRoutes(app, ctx);
   await reportRoutes(app, ctx);
   await adminRoutes(app, ctx);
+  await cronRoutes(app, ctx);
 
   const webDir = opts.config.webDistDir ? resolve(opts.config.webDistDir) : null;
   if (webDir && existsSync(webDir)) {

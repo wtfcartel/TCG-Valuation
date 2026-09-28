@@ -7,3 +7,4 @@ data/
 apps/api/storage/
 test-results/
 playwright-report/
+.vercel/

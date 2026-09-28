@@ -16,7 +16,10 @@ export type Tx = pg.PoolClient;
 export type Queryable = pg.Pool | pg.PoolClient;
 
 export function createPool(connectionString: string): pg.Pool {
-  return new pg.Pool({ connectionString, max: 10 });
+  // Serverless instances each hold their own pool; keep it small and let idle connections go.
+  return process.env.VERCEL
+    ? new pg.Pool({ connectionString, max: 3, idleTimeoutMillis: 10_000 })
+    : new pg.Pool({ connectionString, max: 10 });
 }
 
 export async function withTx<T>(pool: pg.Pool, fn: (tx: Tx) => Promise<T>): Promise<T> {
@@ -45,25 +48,34 @@ export async function many<T extends pg.QueryResultRow>(db: Queryable, sql: stri
 }
 
 function migrationsDir(): string {
-  // Works from src/ (tsx) and dist/ (bundled) — both sit beside ../migrations.
-  return join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
+  // MIGRATIONS_DIR for bundled serverless builds; otherwise src/ (tsx) and dist/ (bundled) both sit beside ../migrations.
+  return process.env.MIGRATIONS_DIR ?? join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 }
 
+/** Serialises concurrent migrators (e.g. several serverless cold starts). Transaction-scoped, so it also works through PgBouncer. */
+const MIGRATION_LOCK = 72_710_001;
+
 export async function migrate(pool: pg.Pool, opts: { poketraceCommercialLicence?: boolean } = {}): Promise<string[]> {
-  await pool.query(`CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
-  const applied = new Set((await many<{ name: string }>(pool, "SELECT name FROM schema_migrations")).map((r) => r.name));
   const files = (await readdir(migrationsDir())).filter((f) => f.endsWith(".sql")).sort();
   const ran: string[] = [];
+  await withTx(pool, async (tx) => {
+    await tx.query("SELECT pg_advisory_xact_lock($1)", [MIGRATION_LOCK]);
+    await tx.query(`CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
+  });
   for (const file of files) {
-    if (applied.has(file)) continue;
-    const sql = await readFile(join(migrationsDir(), file), "utf8");
     await withTx(pool, async (tx) => {
-      await tx.query(sql);
+      await tx.query("SELECT pg_advisory_xact_lock($1)", [MIGRATION_LOCK]);
+      const done = await tx.query("SELECT 1 FROM schema_migrations WHERE name = $1", [file]);
+      if (done.rowCount) return;
+      await tx.query(await readFile(join(migrationsDir(), file), "utf8"));
       await tx.query("INSERT INTO schema_migrations (name) VALUES ($1)", [file]);
+      ran.push(file);
     });
-    ran.push(file);
   }
-  await ensureReferenceData(pool, opts);
+  await withTx(pool, async (tx) => {
+    await tx.query("SELECT pg_advisory_xact_lock($1)", [MIGRATION_LOCK]);
+    await ensureReferenceData(tx, opts);
+  });
   return ran;
 }
 
@@ -73,7 +85,7 @@ const METHODOLOGY_SUMMARY =
   "and a transparent evidence-based confidence classification.";
 
 /** Idempotently register data sources and every methodology version. */
-export async function ensureReferenceData(pool: pg.Pool, opts: { poketraceCommercialLicence?: boolean } = {}): Promise<void> {
+export async function ensureReferenceData(pool: Queryable, opts: { poketraceCommercialLicence?: boolean } = {}): Promise<void> {
   for (const s of sourceDefinitions(opts)) {
     await pool.query(
       `INSERT INTO data_sources (id, name, provides, licence_status, licence_notes, reliability_tier, owner_scoped)

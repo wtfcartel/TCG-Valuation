@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, photoUrl, uploadPhoto } from "../api";
+import { api, photoUrl, stripSavedPage, uploadPhoto } from "../api";
 import { Card, ConfidenceBadge, ErrorNote, useAction } from "../components/ui";
 import { label, money, toMinor, today } from "../format";
 
@@ -341,7 +341,9 @@ export function AssetDetail({ id, currency, role }: { id: string; currency: stri
                 if (!file) return;
                 run(async () => {
                   const site = /ebay\.com\.au/i.test(file.name) ? "ebay.com.au" : /ebay\.co\.uk/i.test(file.name) ? "ebay.co.uk" : ebaySite;
-                  const r = await api("POST", `/api/assets/${id}/evidence/ebay-page`, { html: await file.text(), site });
+                  const html = stripSavedPage(await file.text());
+                  if (html.length > 4_000_000) throw new Error("This page is too large to upload. Save only the 'Sold items' results page.");
+                  const r = await api("POST", `/api/assets/${id}/evidence/ebay-page`, { html, site });
                   setImportNote(
                     `eBay page: ${r.listingsFound} listings, ${r.matched} matched this card, ${r.inserted} new` +
                       (r.bestOfferAcceptedRejected ? `, ${r.bestOfferAcceptedRejected} best-offer (price hidden, will be rejected)` : "") +

@@ -56,9 +56,40 @@ export async function download(path: string, filename: string): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Downscale a photo in the browser (longest side ≤ 2400 px, JPEG) so uploads stay well under serverless
+ * request limits (4.5 MB on Vercel). Falls back to the original file if the browser cannot decode it.
+ */
+export async function shrinkImage(file: File, maxSide = 2400, quality = 0.88): Promise<Blob> {
+  if (file.size < 1.5 * 1024 * 1024 && file.type === "image/jpeg") return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+    return blob && blob.size < file.size ? blob : file;
+  } catch {
+    return file;
+  }
+}
+
+/** Remove scripts, styles and other non-content markup from a saved page before uploading it. */
+export function stripSavedPage(html: string): string {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  doc.querySelectorAll("script, style, noscript, svg, iframe, link, meta, template").forEach((el) => el.remove());
+  doc.querySelectorAll("*").forEach((el) => {
+    for (const attr of [...el.attributes]) if (!["class", "href", "id", "data-listingid"].includes(attr.name)) el.removeAttribute(attr.name);
+  });
+  return `<!doctype html><html><body>${doc.body.innerHTML}</body></html>`;
+}
+
 export async function uploadPhoto(assetId: string, file: File): Promise<void> {
   const form = new FormData();
-  form.append("file", file);
+  const image = await shrinkImage(file);
+  form.append("file", image, image === file ? file.name : file.name.replace(/\.[^.]+$/, "") + ".jpg");
   const res = await fetch(`/api/assets/${assetId}/photos`, { method: "POST", headers: { authorization: `Bearer ${getToken()}` }, body: form });
   if (!res.ok) throw new ApiError(res.status, (await res.json()).message);
 }
