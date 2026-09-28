@@ -95,8 +95,17 @@ function numberKey(n: string | null): string {
   return (n ?? "").split("/")[0]!.replace(/^0+(?=\d)/, "").toLowerCase();
 }
 
+export interface PokeTracePlanInfo {
+  plan: string;
+  active: boolean;
+  dailyLimit: number | null;
+  dailyRemaining: number | null;
+  resetsAt: string | null;
+}
+
 export class PokeTraceAdapter implements SourceAdapter {
   readonly id = "poketrace";
+  private planCache: { info: PokeTracePlanInfo; fetchedAt: number } | null = null;
 
   constructor(
     private readonly apiKey: string | null,
@@ -124,6 +133,23 @@ export class PokeTraceAdapter implements SourceAdapter {
       throw new PokeTraceError(res.status, `PokeTrace ${res.status}: ${message}`);
     }
     return (await res.json()) as T;
+  }
+
+  /** Plan and quota for the configured key (GET /v1/auth/info). Cached for 10 minutes. The key itself is never returned. */
+  async planInfo(force = false): Promise<PokeTracePlanInfo> {
+    if (!force && this.planCache && Date.now() - this.planCache.fetchedAt < 600_000) return this.planCache.info;
+    const { data } = await this.get<{
+      data: { active: boolean; user: { plan: string; daily?: { limit: number; remaining: number; resetsAt: string } } };
+    }>("/v1/auth/info");
+    const info: PokeTracePlanInfo = {
+      plan: data.user.plan,
+      active: data.active,
+      dailyLimit: data.user.daily?.limit ?? null,
+      dailyRemaining: data.user.daily?.remaining ?? null,
+      resetsAt: data.user.daily?.resetsAt ?? null,
+    };
+    this.planCache = { info, fetchedAt: Date.now() };
+    return info;
   }
 
   /** Find the PokeTrace card matching the identity (name + number + variant + language). */
@@ -159,6 +185,14 @@ export class PokeTraceAdapter implements SourceAdapter {
 
   async fetchEvidence(q: EvidenceQuery): Promise<SourcedObservation[]> {
     if (q.identity.game !== "pokemon") return [];
+    // Individual sold listings are a paid-plan feature; don't spend a Free key's quota on a guaranteed 403.
+    let paidPlan = true;
+    try {
+      paidPlan = (await this.planInfo()).plan.toLowerCase() !== "free";
+    } catch (error) {
+      if (error instanceof PokeTraceError && error.status === 401) throw error;
+      // Plan lookup unavailable: try listings anyway and rely on the 403 fallback.
+    }
     const card = await this.resolveCard(q.identity);
     const out: SourcedObservation[] = [];
     const grader = q.gradingCompany && GRADERS.has(q.gradingCompany.toUpperCase()) ? q.gradingCompany.toUpperCase() : null;
@@ -166,7 +200,7 @@ export class PokeTraceAdapter implements SourceAdapter {
     // 1. Individual sold listings (Pro plan). A free key gets 403 → averages only.
     try {
       let cursor: string | undefined;
-      for (let page = 0; page < 3; page += 1) {
+      for (let page = 0; paidPlan && page < 3; page += 1) {
         const res = await this.get<{ data: PtListing[]; pagination: { hasMore: boolean; nextCursor: string | null } }>(
           `/v1/cards/${encodeURIComponent(card.id)}/listings`,
           { grader: grader ?? undefined, grade: grader ? (q.grade ?? undefined) : undefined, sort: "sold_at_desc", limit: 100, cursor },

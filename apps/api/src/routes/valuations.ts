@@ -3,6 +3,8 @@ import { z } from "zod";
 import { audit } from "../audit.js";
 import { many, one } from "../db.js";
 import { getValuation } from "../services/valuation.js";
+import { HttpError, notFound } from "../errors.js";
+import { PokeTraceAdapter, PokeTraceError } from "../sources/poketrace.js";
 import { assertAssetAccess, assertValuationAccess, currency, isoDate, minor, parse, user, uuid, type AppContext } from "./context.js";
 
 export async function valuationRoutes(app: FastifyInstance, ctx: AppContext) {
@@ -77,6 +79,21 @@ export async function valuationRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   app.get("/api/sources", async () => ctx.sources.list());
+
+  // Plan/quota for an API-key source (currently PokeTrace). Never echoes the key.
+  app.get("/api/sources/:id/status", async (req) => {
+    user(req);
+    const { id } = parse(z.object({ id: z.string() }), req.params);
+    const adapter = ctx.sources.get(id);
+    if (!(adapter instanceof PokeTraceAdapter)) throw notFound("Source status");
+    if (!adapter.enabled()) return { sourceId: id, configured: false };
+    try {
+      return { sourceId: id, configured: true, ...(await adapter.planInfo(true)) };
+    } catch (error) {
+      const status = error instanceof PokeTraceError ? error.status : 502;
+      throw new HttpError(status === 401 ? 422 : 502, `PokeTrace status check failed: ${(error as Error).message}`, "upstream_error");
+    }
+  });
 
   app.get("/api/audit", async (req) => {
     const u = user(req);
