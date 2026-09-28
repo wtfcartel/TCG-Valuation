@@ -34,7 +34,7 @@ Everything is configured in [`vercel.json`](../vercel.json). The build was verif
    | `POKETRACE_API_KEY` | Optional: your PokeTrace key |
    | `POKETRACE_COMMERCIAL_LICENCE` | `false` until your PokeTrace plan's terms allow commercial use |
 
-   `NODE_ENV=production` and `VERCEL=1` are set by Vercel. The synthetic demo source stays off in production.
+   Don't add `NODE_ENV` yourself: Vercel sets it for the running app, and the synthetic demo source stays off in production. (The install step uses `npm ci --include=dev` so the build tools are installed even if `NODE_ENV=production` is present at build time.)
 5. **Deploy.** The first request migrates the database automatically.
 6. **Create your admin account.** Register in the deployed app. Then, on your own computer with the production `DATABASE_URL`:
    ```bash
