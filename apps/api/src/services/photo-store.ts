@@ -24,7 +24,7 @@ export class LocalPhotoStore implements PhotoStore {
     return p;
   }
 
-  async put(key: string, data: Buffer): Promise<void> {
+  async put(key: string, data: Buffer, _contentType?: string): Promise<void> {
     const p = this.path(key);
     await mkdir(dirname(p), { recursive: true });
     await writeFile(p, data);
