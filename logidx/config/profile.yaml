@@ -1,0 +1,71 @@
+# Candidate profile seed. After `logidx initdb`, edit it in the dashboard (Settings → Candidate profile);
+# the database copy becomes authoritative.
+#
+# EVIDENCE RULE: every item under `evidence` must be traceable. `source` names where the fact came from.
+# The items below come only from the LogiDx build brief dated 2026-10-21. They are summaries, not CV
+# text: import the Executive CV V3 (Documents → Master CV) to add specific, dated achievements.
+# AI assessments may cite only these items and the imported master CV; they must not invent others.
+
+name: ""
+home_base: Ormond, Melbourne, Victoria
+experience_years: 18
+headline: Senior logistics, commercial, operations and transformation executive; former Chief Operating Officer
+
+geography:
+  preferred: [Melbourne metro, metropolitan Victoria, hybrid, national roles workable from Melbourne]
+  consider_with_flag: [regional Victoria, roles with regular interstate travel]
+  exclude_by_default: []   # interstate roles are classified separately, never silently dropped
+
+remuneration:
+  discovery_threshold_base_aud: 160000
+  preferred_min_aud: 200000
+  preferred_max_aud: 300000
+  include_undisclosed: true
+  notes: Consider super, STI, LTI, equity and vehicle.
+
+preferences:
+  prioritise: [executive strategy, commercial leadership, general management, operational transformation,
+               turnaround, value creation, equity opportunities]
+  avoid: [roles dominated by transactional cold calling,
+          specialist technical roles requiring unsupported qualifications]
+  open_to_industries_outside_logistics: true
+
+evidence:
+  - id: E1
+    claim: Approximately 18 years' experience across logistics, transport, supply chain, warehousing and cold chain,
+      in commercial and operational leadership roles.
+    source: build brief 2026-10-21
+  - id: E2
+    claim: Former Chief Operating Officer and senior national commercial/operations executive.
+    source: build brief 2026-10-21
+  - id: E3
+    claim: Led businesses with revenue of approximately AUD 65 million to AUD 100 million.
+    source: build brief 2026-10-21
+  - id: E4
+    claim: Leadership of national operations, large fleets, subcontractor networks, multi-site facilities and
+      complex customer relationships.
+    source: build brief 2026-10-21
+  - id: E5
+    claim: Direct P&L, EBITDA, cost-to-serve, budgeting, commercial negotiation and performance-improvement
+      accountability.
+    source: build brief 2026-10-21
+  - id: E6
+    claim: M&A, divestment, business stabilisation, transition and integration experience.
+    source: build brief 2026-10-21
+  - id: E7
+    claim: Strategic contracts and enterprise customers; operational restructuring and cost reduction.
+    source: build brief 2026-10-21
+  - id: E8
+    claim: Exposure to board reporting, corporate governance and business transformation.
+    source: build brief 2026-10-21
+  - id: E9
+    claim: Founding member and interim board member of an Australian mental health not-for-profit, including early
+      ACNC registration and funding strategy.
+    source: build brief 2026-10-21
+  - id: E10
+    claim: Experience across infrastructure, transport, logistics, industrial services and commercial leadership.
+    source: build brief 2026-10-21
+
+# Credentials the candidate holds. Leave empty unless confirmed; knockout checks treat unlisted credentials
+# as "not held".
+credentials: []

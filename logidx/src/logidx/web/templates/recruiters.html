@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Recruiter intelligence{% endblock %}
+{% block content %}
+<h1>Recruiter intelligence</h1>
+<p class="muted">Agencies from the watchlist and any agency seen on a listing. Consultants are the recruiting contact, not the employer's hiring authority. Record only public contact details, with where they were found.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Agency</th><th>Board</th><th>Active vacancies</th><th>Consultants</th></tr></thead>
+  <tbody>
+  {% for a in agencies %}
+  {% set w = watch.get(a.name) %}
+  <tr>
+    <td><a href="/jobs?q={{ a.name|urlencode }}&relevant=0">{{ a.name }}</a>{% if w and w.notes %}<div class="sub">{{ w.notes }}</div>{% endif %}</td>
+    <td>{% if w %}{{ w.ats }} — {{ "configured" if w.configured else "identifier not configured" }}{% else %}seen on listings{% endif %}</td>
+    <td>{{ counts[a.id] }}</td>
+    <td>{% for r in a.recruiters %}<div>{{ r.name }}{% if r.title %}, {{ r.title }}{% endif %}{% if r.public_email %} · {{ r.public_email }}{% endif %}{% if r.profile_url %} · <a href="{{ r.profile_url }}" rel="noopener noreferrer" target="_blank">profile</a>{% endif %}
+      <span class="sub">source: {{ r.contact_source }}; verified {{ r.last_verified_at|local("%d %b %Y") }}{% if r.previously_contacted %}; previously contacted{% endif %}</span></div>{% else %}<span class="muted">—</span>{% endfor %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<section class="card">
+  <h2>Add a consultant</h2>
+  <form method="post" action="/recruiters" class="grid-form">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Agency <select name="agency_id">{% for a in agencies %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}</select></label>
+    <label>Name <input name="name" required maxlength="200"></label>
+    <label>Title <input name="title" maxlength="200"></label>
+    <label>Specialty <input name="specialty"></label>
+    <label>Public email <input name="public_email" type="email"></label>
+    <label>Public phone <input name="public_phone"></label>
+    <label>Profile URL <input name="profile_url" type="url"></label>
+    <label>Where this public information was found <input name="contact_source" required></label>
+    <button type="submit">Add</button>
+  </form>
+</section>
+{% endblock %}

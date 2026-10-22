@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Runs{% endblock %}
+{% block content %}
+<h1>Runs</h1>
+<p class="small">Next scheduled: {% for t in upcoming %}{{ t|local("%a %d %b %H:%M") }}{% if not loop.last %} · {% endif %}{% else %}none (schedule disabled){% endfor %}</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Trigger</th><th>Scheduled</th><th>Started</th><th>Duration</th><th>Status</th><th>Counts</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr>
+    <td><a href="/runs/{{ r.id }}">{{ r.id }}</a></td>
+    <td>{{ r.trigger }}{% if r.slot %} {{ r.slot }}{% endif %}</td>
+    <td>{{ r.scheduled_for|local("%d %b %H:%M") if r.scheduled_for else "—" }}</td>
+    <td>{{ r.started_at|local("%d %b %H:%M:%S") }}</td>
+    <td>{% if r.finished_at %}{{ ((r.finished_at - r.started_at).total_seconds())|round(1) }}s{% else %}…{% endif %}</td>
+    <td>{{ badge(r.status, "run") }}{% if r.error %}<div class="err small">{{ r.error }}</div>{% endif %}</td>
+    <td class="small">{% for k, val in (r.counts or {}).items() if k not in ("recall",) %}{{ k }}: {{ val }}{% if not loop.last %} · {% endif %}{% endfor %}</td>
+  </tr>
+  {% else %}<tr><td colspan="7" class="empty">No runs yet.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

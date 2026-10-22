@@ -1,0 +1,110 @@
+# Known-vacancy recall cases.
+#
+# kind: live      — a real, previously missed vacancy. Evaluated against discovered data after every run.
+#                   carried_by lists the sources (restricted-source names or watchlist board keys) believed
+#                   to carry the advert; it is used to tell an ACCESS GAP from a genuine MISS.
+# kind: taxonomy  — an offline fixture run through the classifier only. It tests query/taxonomy coverage
+#                   (exact titles, alternates, responsibilities-only, confidential listings) and is NOT a
+#                   claim that such a vacancy exists. Fixture text below is written for testing.
+cases:
+  - key: case_a_sigma_head_of_logistics
+    kind: live
+    label: Sigma Search Supply Chain — Head of Logistics (Ingleburn, NSW)
+    match:
+      title_any: [head of logistics]
+      party_any: [sigma]
+      source_ids: ["linkedin:4479944706"]
+    carried_by: [linkedin, sigma_search]
+    expected: {relevant: true, category: supply_chain_logistics,
+               geography: "INTERSTATE — RELOCATION OR SUBSTANTIAL ATTENDANCE"}
+    probe: {title: Head of Logistics, location: "Ingleburn, NSW"}
+    notes: >-
+      LinkedIn requisition 4479944706. Strong functional match; geographically unsuitable without substantial
+      Sydney presence. Expected: discovered, or an explicit source-access gap; geography classified separately.
+
+  - key: case_b_six_degrees_gm_supply_chain
+    kind: live
+    label: Six Degrees Executive — General Manager Supply Chain (ref BH-31092)
+    match:
+      title_any: [general manager supply chain, gm supply chain]
+      party_any: [six degrees]
+      references: [BH-31092]
+      source_ids: ["bullhorn:*:31092"]
+    carried_by: [six_degrees, seek, linkedin]
+    expected: {relevant: true, category: supply_chain_logistics}
+    probe: {title: General Manager Supply Chain}
+    notes: >-
+      Reference BH-31092 (Bullhorn-style id). carried_by includes SEEK/LinkedIn on the assumption that the
+      agency cross-posts there — unverified. Do not assume the role remains open without verification.
+
+  # ---------------------------------------------------------------- Case C: taxonomy fixtures
+  - key: c_exact_egm
+    kind: taxonomy
+    label: Exact title — Executive General Manager
+    probe: {title: Executive General Manager, description: "Lead a national business unit with full P&L.",
+            location: "Melbourne VIC"}
+    expected: {relevant: true, category: egm_group, geography: MELBOURNE}
+  - key: c_alt_gm_supply_chain
+    kind: taxonomy
+    label: Alternate title order — GM – Supply Chain & Logistics
+    probe: {title: "GM – Supply Chain & Logistics", location: "Dandenong South, VIC"}
+    expected: {relevant: true, category: supply_chain_logistics, geography: MELBOURNE}
+  - key: c_alt_corp_dev
+    kind: taxonomy
+    label: Alternate title — Director, Corporate Development & M&A
+    probe: {title: "Director, Corporate Development & M&A", location: "Sydney NSW or Melbourne VIC"}
+    expected: {relevant: true, category: mna, geography: "NATIONAL — MELBOURNE OPTION STATED"}
+  - key: c_strategy_lead_scoped
+    kind: taxonomy
+    label: Lead title with executive scope — Strategy Lead
+    probe: {title: Strategy Lead, description: "Reporting to the CEO and a member of the executive leadership team,
+      you will own the strategic plan and board reporting."}
+    expected: {relevant: true, category: strategy}
+  - key: c_lead_without_scope
+    kind: taxonomy
+    label: Lead title without executive scope — Commercial Lead (call targets)
+    probe: {title: Commercial Lead, description: "Make 60 outbound calls a day and hit your call targets."}
+    expected: {relevant: false}
+  - key: c_responsibilities_only
+    kind: taxonomy
+    label: Responsibilities-only title — Business Leader, Transport
+    probe: {title: "Business Leader – Transport Division", description: "Full P&L and EBITDA accountability,
+      reporting to the CEO, leading national operations across multi-site transport and fleet depots."}
+    expected: {relevant: true, category: supply_chain_logistics}
+  - key: c_confidential
+    kind: taxonomy
+    label: Confidential recruiter listing — Confidential Appointment, Chief Operating Officer
+    probe: {title: "Confidential Appointment – Chief Operating Officer", description: "Our client, a private
+      equity backed industrial services business, seeks a COO.", location: Melbourne}
+    expected: {relevant: true, category: ceo_coo_advisory_nfp, geography: MELBOURNE}
+  - key: c_transformation_no_logistics
+    kind: taxonomy
+    label: Discipline without the word logistics — Head of Transformation
+    probe: {title: Head of Transformation, location: "Remote, Australia"}
+    expected: {relevant: true, category: transformation}
+  - key: c_pe_operating_partner
+    kind: taxonomy
+    label: Private equity — Operating Partner
+    probe: {title: Operating Partner, description: "Drive value creation across portfolio companies."}
+    expected: {relevant: true, category: private_equity}
+  - key: c_nfp_ceo
+    kind: taxonomy
+    label: NFP — Chief Executive Officer, mental health charity
+    probe: {title: Chief Executive Officer, description: "Lead a not-for-profit mental health charity registered
+      with the ACNC.", location: "Melbourne VIC"}
+    expected: {relevant: true, category: ceo_coo_advisory_nfp}
+  - key: c_national_ops_interstate
+    kind: taxonomy
+    label: National title based interstate — National Operations Manager, Brisbane
+    probe: {title: National Operations Manager, location: "Brisbane QLD"}
+    expected: {relevant: true, category: operations, geography: "INTERSTATE — RELOCATION OR SUBSTANTIAL ATTENDANCE"}
+  - key: c_negative_supervisor
+    kind: taxonomy
+    label: Negative — Warehouse Supervisor
+    probe: {title: Warehouse Supervisor, location: "Truganina VIC"}
+    expected: {relevant: false}
+  - key: c_negative_engineer
+    kind: taxonomy
+    label: Negative — Senior Software Engineer (logistics platform)
+    probe: {title: Senior Software Engineer, description: "Build our logistics platform."}
+    expected: {relevant: false}

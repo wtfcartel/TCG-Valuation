@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Recall & QA{% endblock %}
+{% block content %}
+<h1>Recall and quality assurance</h1>
+<div class="kpis">
+  <div class="kpi"><span>{{ metrics.found }}/{{ metrics.live_cases }}</span>known vacancies found</div>
+  <div class="kpi"><span>{{ metrics.access_gaps }}</span>access gaps</div>
+  <div class="kpi"><span>{{ "%.0f%%"|format(metrics.recall_accessible * 100) if metrics.recall_accessible is not none else "n/a" }}</span>recall (accessible cases; target ≥ 95%)</div>
+  <div class="kpi"><span>{{ metrics.fixtures_passed }}/{{ metrics.fixtures_total }}</span>taxonomy fixtures passing</div>
+  <div class="kpi"><span>{{ metrics.duplicate_merge_rate if metrics.duplicate_merge_rate is not none else "n/a" }}</span>cross-post merge rate</div>
+</div>
+<p class="muted small">Targets are goals, not achieved results. Recall is computed only over cases whose carrying source was searched; access gaps are reported separately.</p>
+
+<section class="card">
+  <h2>Known vacancies (live cases)</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Case</th><th>Latest result</th><th>Cause</th><th>Detail</th><th>History</th></tr></thead>
+    <tbody>
+    {% for c in cases if c.spec.kind == "live" %}
+    {% set r = c.results[-1] if c.results else none %}
+    <tr><td><strong>{{ c.label }}</strong><div class="sub">{{ c.spec.notes }}</div></td>
+      <td>{% if r %}{{ badge(r.outcome, "recall") }}<div class="sub">{{ r.at|local("%d %b %H:%M") }}</div>{% else %}not evaluated yet{% endif %}</td>
+      <td>{{ r.cause if r and r.cause else "—" }}</td>
+      <td class="small">{% if r %}{% if r.vacancy_id %}<a href="/jobs/{{ r.vacancy_id }}">matched vacancy</a> · {% endif %}{{ r.detail.explanation or "" }}
+        {% if r.detail.carrier_statuses %}<div>Carriers: {% for k, s in r.detail.carrier_statuses.items() %}{{ k }} = {{ s }}{% if not loop.last %}; {% endif %}{% endfor %}</div>{% endif %}
+        {% if r.detail.issues %}<div class="warn">{{ r.detail.issues|join("; ") }}</div>{% endif %}
+        {% if r.detail.probe %}<div>Probe: relevant={{ r.detail.probe.relevant }}, category={{ r.detail.probe.category }}, geography={{ r.detail.probe.geography }}</div>{% endif %}{% endif %}</td>
+      <td class="small">{{ c.results|length }} evaluations</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card">
+  <h2>Taxonomy fixtures (Case C)</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Fixture</th><th>Result</th><th>Observed</th><th>Problems</th></tr></thead>
+    <tbody>{% for f in fixtures %}<tr><td>{{ f.label }}</td><td>{{ badge("PASS" if f.passed else "FAIL", "recall") }}</td>
+      <td class="small">relevant={{ f.observed.relevant }}, seniority={{ f.observed.seniority }}, category={{ f.observed.category }}, geography={{ f.observed.geography }}</td>
+      <td class="small err">{{ f.problems|join("; ") }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <p class="small muted">Edit cases in <code>config/recall_cases.yaml</code>. Fixtures test the taxonomy offline; they are not real vacancies.</p>
+</section>
+{% endblock %}

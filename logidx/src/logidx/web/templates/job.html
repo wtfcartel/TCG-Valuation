@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, fit %}
+{% block title %}{{ v.title }}{% endblock %}
+{% block content %}
+<p><a href="/jobs">← Job discovery</a></p>
+<h1>{{ v.title }}</h1>
+<p class="lead">{{ v.employer or ("Confidential employer" if v.is_confidential else "Employer not stated") }}
+  {% if v.recruiting_agency %} · recruiting agency: {{ v.recruiting_agency }}{% endif %}
+  · {{ taxonomy.category_label(v.primary_category) }}</p>
+<p>{{ fit(v) }} {{ badge(v.verification_status, "ver") }} {{ badge(v.geography, "geo") }} {{ badge(v.application_status, "app") }} {{ badge(v.lifecycle, "life") }}</p>
+
+<div class="grid2">
+<section class="card">
+  <h2>Why this role was surfaced</h2>
+  {% if v.ai_summary %}<p>{{ v.ai_summary }}</p>{% endif %}
+  {% if v.fit_override_reason %}<p class="warn">Override: {{ v.fit_override_reason }}</p>{% endif %}
+  <ul class="small">
+    <li>Seniority signal: <strong>{{ v.seniority_signal }}</strong>; disciplines: {% for c in v.categories %}{{ taxonomy.category_label(c) }}{% if not loop.last %}, {% endif %}{% endfor %}</li>
+    <li>Deterministic prescore {{ "%.1f"|format(v.prescore) }} / 10{% if v.relevance_flags %}: {{ v.relevance_flags|join("; ") }}{% endif %}</li>
+  </ul>
+  {% if assessment %}
+  {% set o = assessment.output %}
+  <table class="scores">
+    {% for key, label in [("capability_fit","Capability fit"),("evidence_fit","Evidence fit"),("archetype_fit","Archetype fit"),("ats_lexical_fit","ATS lexical fit"),("recruiter_read_fit","Recruiter read fit")] %}
+    <tr><th>{{ label }}</th><td class="score">{{ "%.1f"|format(o[key].score) }}</td><td>{{ o[key].rationale }}</td></tr>
+    {% endfor %}
+    <tr><th>Conversion</th><td>{{ o.conversion.assessment }}</td><td>{{ o.conversion.rationale }}{% if o.conversion.screening_risks %}<br><em>Screening risks:</em> {{ o.conversion.screening_risks|join("; ") }}{% endif %}</td></tr>
+    <tr><th>Executive scope</th><td>{{ "Yes" if o.seniority.is_executive_scope else "No" }}</td><td>{{ o.seniority.rationale }}</td></tr>
+  </table>
+  {% if o.requirements %}
+  <h3>Requirements vs evidence</h3>
+  <table class="small"><thead><tr><th>Requirement</th><th>Importance</th><th>Support</th><th>Evidence</th></tr></thead>
+  {% for r in o.requirements %}<tr><td>{{ r.requirement }}</td><td>{{ r.importance }}</td><td>{{ r.support }}</td><td>{{ r.evidence_ids|join(", ") }} {{ r.note }}</td></tr>{% endfor %}
+  </table>{% endif %}
+  {% if o.missing_keywords %}<p class="small"><strong>Missing ATS concepts:</strong> {{ o.missing_keywords|join(", ") }}</p>{% endif %}
+  <p class="small muted">Assessed {{ assessment.created_at|local }} by {{ assessment.provider }} / {{ assessment.model }} (prompt {{ assessment.prompt_version }}).</p>
+  {% else %}
+  <p class="muted">Not AI-assessed yet.</p>
+  {% endif %}
+  <form method="post" action="/jobs/{{ v.id }}/assess"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <button type="submit" {% if not ai_available %}disabled title="Set XAI_API_KEY"{% endif %}>{% if assessment %}Re-assess{% else %}Assess with AI{% endif %}</button></form>
+</section>
+
+<section class="card">
+  <h2>Facts (deterministic)</h2>
+  <dl class="facts">
+    <dt>Location</dt><dd>{{ v.location_text or "—" }} — {{ v.geography_reason }}</dd>
+    <dt>Work mode</dt><dd>{{ v.work_mode }}</dd>
+    {% if v.travel_requirements %}<dt>Travel</dt><dd>{{ v.travel_requirements }}</dd>{% endif %}
+    <dt>Salary</dt><dd>{% if v.salary_max %}{{ v.salary_min|money }} – {{ v.salary_max|money }} {{ v.salary_period }}
+        {% if v.salary_includes_super is true %}(incl. super; base ≈ {{ v.salary_base_estimate_max|money }}){% elif v.salary_includes_super is false %}(+ super){% endif %}
+        {% if v.salary_below_threshold %}<span class="warn">below discovery threshold</span>{% endif %}
+        <div class="sub">“{{ v.salary_text }}”</div>{% else %}Not disclosed{% endif %}
+        {% if v.benefits %}<div class="sub">Benefits mentioned: {{ v.benefits|join(", ") }}</div>{% endif %}</dd>
+    <dt>Employment</dt><dd>{{ v.employment_type or "—" }}</dd>
+    <dt>Posted</dt><dd>{{ v.posted_at|local("%d %b %Y") if v.posted_at else "—" }}</dd>
+    <dt>Closing</dt><dd>{{ v.closing_date or "—" }}</dd>
+    <dt>First found</dt><dd>{{ v.first_discovered_at|local }}</dd>
+    <dt>Last seen</dt><dd>{{ v.last_seen_at|local }}</dd>
+    <dt>Reference</dt><dd>{{ v.reference or "—" }}</dd>
+    <dt>Advert</dt><dd>{% if v.advert_url %}<a href="{{ v.advert_url }}" rel="noopener noreferrer" target="_blank">{{ v.advert_url|truncate(70) }}</a>{% else %}—{% endif %}</dd>
+    <dt>Apply</dt><dd>{% if v.application_url %}<a href="{{ v.application_url }}" rel="noopener noreferrer" target="_blank">{{ v.application_url|truncate(70) }}</a>{% else %}—{% endif %}</dd>
+  </dl>
+  {% if v.knockouts %}
+  <h3>Requirements to check</h3>
+  <ul class="small">{% for k in v.knockouts %}<li><strong>{{ k.importance }}</strong> {{ k.requirement }} — candidate meets: {{ k.candidate_meets }} <span class="muted">({{ k.origin }})</span><div class="sub">“{{ k.quote }}”</div></li>{% endfor %}</ul>
+  {% endif %}
+
+  <h3>Verification</h3>
+  <p>{{ badge(v.verification_status, "ver") }} <span class="small muted">checked {{ v.verified_at|local if v.verified_at else "never" }}</span></p>
+  <ul class="small">{% for e in v.verification_evidence %}<li><strong>{{ e.type }}</strong>{% for k, val in e.items() if k != "type" and val not in (None, "", [], False) %} · {{ k }}: {{ val }}{% endfor %}</li>{% endfor %}</ul>
+  <form method="post" action="/jobs/{{ v.id }}/verify"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <button type="submit">Re-verify now</button> <span class="small muted">Fetches the advert/application URL once, without logging in or submitting anything.</span></form>
+</section>
+</div>
+
+<section class="card">
+  <h2>Application</h2>
+  <form method="post" action="/jobs/{{ v.id }}/status" class="inline">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <select name="status">{% for s in statuses %}<option {% if s.value == v.application_status %}selected{% endif %}>{{ s.value }}</option>{% endfor %}</select>
+    <input type="text" name="note" placeholder="Note (optional)" maxlength="1000">
+    <button type="submit">Update status</button>
+  </form>
+  <p class="small muted">LogiDx never submits applications or sends messages. Record what you did here.</p>
+  <form method="post" action="/jobs/{{ v.id }}/notes" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Notes <textarea name="notes" rows="3">{{ v.notes or "" }}</textarea></label>
+    <button type="submit">Save notes</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Description {% if v.description_is_snippet %}<span class="badge">snippet only</span>{% endif %}</h2>
+  <div class="description">{{ v.description or "No description retrieved." }}</div>
+</section>
+
+<div class="grid2">
+<section class="card">
+  <h2>Sources</h2>
+  <ul class="small">{% for s in v.sources %}
+    <li><strong>{{ s.source }}</strong>{% if s.board %} / {{ s.board }}{% endif %} · {{ s.access_method }} · id {{ s.source_job_id }}
+      {% if s.is_employer_requisition %}· employer requisition{% endif %}{% if s.is_agency_listing %}· agency listing{% endif %}
+      · {{ "present" if s.present else "no longer listed" }} · last seen {{ s.last_seen_at|local("%d %b %H:%M") }}
+      {% if s.url %}· <a href="{{ s.url }}" rel="noopener noreferrer" target="_blank">open</a>{% endif %}</li>
+  {% endfor %}</ul>
+</section>
+<section class="card">
+  <h2>History</h2>
+  <ol class="small history">{% for e in v.events|reverse %}<li>{{ e.at|local("%d %b %H:%M") }} — <strong>{{ e.kind }}</strong> by {{ e.actor }}{% if e.detail %} <span class="muted">{{ e.detail }}</span>{% endif %}</li>{% endfor %}</ol>
+</section>
+</div>
+{% endblock %}

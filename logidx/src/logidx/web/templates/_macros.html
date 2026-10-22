@@ -1,0 +1,72 @@
+{% macro badge(value, kind="") -%}
+<span class="badge {{ kind }} b-{{ value|slug }}">{{ value }}</span>
+{%- endmacro %}
+
+{% macro fit(v) -%}
+{% if v.fit_class != "Unassessed" %}{{ badge(v.fit_class, "fit") }} <span class="score">{{ "%.1f"|format(v.overall_fit or 0) }}</span>
+{% else %}<span class="badge fit b-unassessed" title="Deterministic prescore before AI assessment">prescore {{ "%.1f"|format(v.prescore) }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro vacancy_rows(rows, taxonomy=None) -%}
+<div class="table-wrap">
+<table class="vacancies">
+  <thead><tr><th>Role</th><th>Fit</th><th>Status</th><th>Location</th><th>Salary</th><th>Posted / found</th></tr></thead>
+  <tbody>
+  {% for v in rows %}
+  <tr>
+    <td><a href="/jobs/{{ v.id }}" class="title">{{ v.title }}</a>
+      <div class="sub">{{ v.employer or ("Confidential" if v.is_confidential else "—") }}{% if v.recruiting_agency %} · via {{ v.recruiting_agency }}{% endif %}
+      {% if v.primary_category and taxonomy %} · {{ taxonomy.category_label(v.primary_category) }}{% endif %}</div></td>
+    <td>{{ fit(v) }}</td>
+    <td>{{ badge(v.verification_status, "ver") }}{% if v.application_status != "DISCOVERED" %}<br>{{ badge(v.application_status, "app") }}{% endif %}</td>
+    <td>{{ v.location_text or "—" }}<div class="sub">{{ badge(v.geography, "geo") }}</div></td>
+    <td>{{ v.salary_max|money if v.salary_max else "Not disclosed" }}{% if v.salary_below_threshold %} <span class="warn" title="Below discovery threshold">▼</span>{% endif %}</td>
+    <td>{{ v.posted_at|local("%d %b") if v.posted_at else "—" }}<div class="sub">found {{ v.first_discovered_at|local("%d %b") }}</div></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" class="empty">No vacancies match. This does not mean none exist — check Search coverage for sources that were not searched.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{%- endmacro %}
+
+{% macro source_matrix(sources) -%}
+<div class="table-wrap">
+<table class="matrix">
+  <thead><tr><th>Source</th><th>Status today</th><th>Searches</th><th>Results</th><th>Unique</th><th>Relevant</th><th>Verified open</th><th>Last success</th><th>Limitations / errors</th></tr></thead>
+  <tbody>
+  {% for r in sources %}
+  <tr>
+    <td>{{ r.label }}{% if r.members|length > 1 %}<details><summary>{{ r.members|length }} boards</summary><ul class="members">{% for m, s in r.members.items() %}<li>{{ m }} — {{ s }}</li>{% endfor %}</ul></details>{% endif %}</td>
+    <td>{{ badge(r.status, "src") }}{% if r.failed %}<div class="sub">{{ r.failed }} failed</div>{% endif %}</td>
+    <td>{{ r.searches }}</td><td>{{ r.results }}</td><td>{{ r.unique }}</td><td>{{ r.relevant }}</td><td>{{ r.verified_open }}</td>
+    <td>{{ r.last_success|local("%d %b %H:%M") if r.last_success else "never" }}</td>
+    <td class="small">{% for l in r.limitations[:2] %}<div>{{ l }}</div>{% endfor %}{% for e in r.errors[:2] %}<div class="err">{{ e }}</div>{% endfor %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{%- endmacro %}
+
+{% macro category_matrix(categories) -%}
+<div class="table-wrap">
+<table class="matrix">
+  <thead><tr><th>Discipline</th><th>Today</th><th>Runs</th><th>Queries run / planned</th><th>Sources OK</th><th>Results</th><th>Relevant</th><th>Note</th></tr></thead>
+  <tbody>
+  {% for c in categories %}
+  <tr>
+    <td><a href="/jobs?category={{ c.key }}">{{ c.label }}</a></td>
+    <td>{{ badge(c.status, "cat") }}</td>
+    <td>{{ c.runs }}</td>
+    <td>{% if c.executed_queries or c.missing_queries %}{{ c.executed_queries|length }} / {{ c.planned_queries|length }}{% else %}<span class="muted" title="No keyword-search source ran; covered by full board listings">boards only</span>{% endif %}</td>
+    <td>{{ c.sources_succeeded|length }}</td>
+    <td>{{ c.results }}</td><td>{{ c.relevant }}</td>
+    <td class="small">{{ c.note }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{%- endmacro %}

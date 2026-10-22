@@ -1,0 +1,512 @@
+# LogiDx executive search taxonomy.
+#
+# Keywords are DISCOVERY SIGNALS, not eligibility rules. A match makes a vacancy a candidate for
+# assessment; seniority, scope, geography and AI evaluation decide whether it is worth pursuing.
+#
+# Matching is case-insensitive on whole words. Australian/US spellings are generated
+# automatically for -ise/-ize, -isation/-ization and -our/-or (see logidx/taxonomy.py), so list
+# the Australian form only. "&" and "and" are treated as equivalent.
+version: 1
+
+seniority:
+  # Titles that by themselves indicate executive level.
+  executive:
+    - chief executive officer
+    - ceo
+    - chief operating officer
+    - coo
+    - chief commercial officer
+    - cco
+    - chief strategy officer
+    - chief transformation officer
+    - chief supply chain officer
+    - chief of staff
+    - managing director
+    - executive director
+    - executive general manager
+    - egm
+    - group general manager
+    - national general manager
+    - country manager
+    - managing partner
+    - operating partner
+    - ceo designate
+    - president
+    - vice president
+    - vp
+    - svp
+  # Senior titles: usually executive or one level below; scope still matters.
+  senior:
+    - general manager
+    - gm
+    - regional general manager
+    - state general manager
+    - business unit general manager
+    - head of
+    - national head of
+    - director
+    - commercial director
+    - operations director
+    - strategy director
+    - transformation director
+    - practice director
+    - principal consultant
+    - advisory partner
+    - partner
+    - interim coo
+    - fractional coo
+    - interim general manager
+    - national manager
+    - national operations manager
+    - state manager
+  # "Lead" titles are NOT executive by default. They need scope evidence (see scope_signals).
+  lead:
+    - lead
+  # Prefixes combined with function-first titles in generated queries.
+  prefixes: [national, regional, group, enterprise, anz, state, global, apac]
+  # Junior or support titles that should not be treated as executive even when a family matches.
+  exclude:
+    - assistant
+    - coordinator
+    - administrator
+    - analyst
+    - intern
+    - internship
+    - graduate
+    - trainee
+    - apprentice
+    - officer          # "Chief ... Officer" is handled by the executive list first
+    - associate
+    - receptionist
+    - executive assistant
+    - personal assistant
+    - team leader
+    - supervisor
+    - driver
+    - storeperson
+    - forklift
+    - picker
+    - clerk
+
+# Description phrases that show genuine executive scope. Used to promote "Lead" titles and to
+# separate executive roles from senior-specialist roles.
+scope_signals:
+  - p&l
+  - profit and loss
+  - ebitda
+  - reporting to the ceo
+  - reporting to the managing director
+  - reporting to the coo
+  - reporting to the board
+  - executive leadership team
+  - senior leadership team
+  - elt
+  - board reporting
+  - direct reports
+  - national operations
+  - multi-site
+  - annual revenue
+  - turnover of
+  - budget of
+  - full accountability
+  - strategic direction
+  - business unit
+  - value creation
+  - private equity
+
+# Signals of roles the candidate has asked to avoid (transactional cold calling) or that are
+# specialist-dominated. These lower the deterministic prescore; they never hide a vacancy.
+negative_signals:
+  cold_calling: [cold calling, cold-calling, door to door, door-to-door, outbound calls, call targets,
+                 commission only, new business hunter, telesales]
+  specialist_technical: [software engineering, full stack, devops, data scientist, machine learning engineer,
+                         clinical governance lead, registered nurse, pharmacist, structural engineer,
+                         electrical engineer, mechanical engineer, process engineer, financial accounting,
+                         statutory reporting, audit partner, actuarial]
+
+# Deterministic hard-knockout patterns. The AI layer also assesses knockouts; these are used to
+# make sure obvious mandatory credentials are never missed. "essential_markers" near a match
+# make it essential; otherwise it is recorded as possibly desirable.
+knockouts:
+  essential_markers: [must have, must hold, mandatory, essential, required, requirement, you will need,
+                      eligible to obtain, ability to obtain, current]
+  patterns:
+    engineering_registration: [chartered professional engineer, cpeng, rpeq, registered professional engineer,
+                               degree in engineering, engineering degree, bachelor of engineering]
+    accounting_qualification: [cpa, chartered accountant, ca anz, cima, acca]
+    clinical_registration: [ahpra, registered nurse, clinical registration, medical practitioner]
+    security_clearance: [nv1, nv2, negative vetting, baseline clearance, security clearance, agsva]
+    legal_practice: [practising certificate, admitted as a lawyer, admitted to practice]
+    industry_licence: [master mariner, first class mine manager, mine manager certificate, casa licence,
+                       aviation licence, heavy rail safeworking, dangerous goods safety adviser]
+    citizenship: [australian citizen, australian citizenship]
+
+families:
+  A_general_management:
+    label: Chief Executive and General Management
+    titles:
+      - ceo
+      - chief executive officer
+      - coo
+      - chief operating officer
+      - managing director
+      - md
+      - executive director
+      - executive general manager
+      - egm
+      - general manager
+      - gm
+      - group general manager
+      - national general manager
+      - regional general manager
+      - state general manager
+      - business unit general manager
+      - country manager
+      - managing partner
+      - operating partner
+      - chief of staff
+      - ceo designate
+      - succession executive
+    responsibilities:
+      - full p&l accountability
+      - lead the executive team
+      - business unit leadership
+      - reporting to the board
+      - overall business performance
+
+  B_head_of_lead:
+    label: Head of and Lead Variants
+    titles:
+      - head of operations
+      - head of national operations
+      - national head of operations
+      - head of commercial
+      - head of strategy
+      - head of transformation
+      - head of logistics
+      - head of supply chain
+      - head of distribution
+      - head of national sales
+      - head of national commercial
+      - commercial lead
+      - operations lead
+      - strategy lead
+      - transformation lead
+      - integration lead
+      - m&a lead
+      - supply chain lead
+      - logistics lead
+      - distribution lead
+      - growth lead
+      - business improvement lead
+      - partnerships lead
+      - service delivery lead
+    responsibilities: []
+
+  C_strategy:
+    label: Strategy
+    titles:
+      - strategy lead
+      - corporate strategy
+      - strategic planning
+      - chief strategy officer
+      - head of strategy
+      - strategy director
+      - director of strategy
+      - strategy lead
+      - group strategy
+      - business strategy
+      - enterprise strategy
+      - strategic initiatives
+      - strategy execution
+      - strategic projects
+      - strategic development
+      - corporate planning
+      - strategy manager
+      - general manager strategy
+    responsibilities:
+      - develop the corporate strategy
+      - strategic plan
+      - long-term strategy
+      - strategy development and execution
+      - board strategy
+
+  D_mergers_acquisitions:
+    label: Mergers and Acquisitions
+    titles:
+      - integration lead
+      - m&a lead
+      - m&a
+      - mergers and acquisitions
+      - corporate development
+      - acquisitions
+      - divestments
+      - business integration
+      - post-merger integration
+      - pmi
+      - corporate transactions
+      - transaction execution
+      - investment integration
+      - business consolidation
+      - strategic acquisitions
+      - portfolio optimisation
+      - integration director
+      - integration manager
+    responsibilities:
+      - acquisition integration
+      - due diligence
+      - deal execution
+      - integration of acquired businesses
+      - divestment
+
+  E_transformation:
+    label: Transformation and Turnaround
+    titles:
+      - transformation lead
+      - business improvement lead
+      - enterprise transformation
+      - business transformation
+      - operational transformation
+      - business improvement
+      - operational excellence
+      - turnaround
+      - restructuring
+      - change management
+      - cost reduction
+      - performance improvement
+      - process optimisation
+      - business stabilisation
+      - transformation director
+      - transformation manager
+      - head of transformation
+    responsibilities:
+      - lead the transformation
+      - transformation program
+      - turnaround the business
+      - cost-out
+      - operating model redesign
+
+  F_commercial:
+    label: Commercial Leadership
+    titles:
+      - commercial lead
+      - head of commercial
+      - head of national commercial
+      - head of national sales
+      - growth lead
+      - partnerships lead
+      - chief commercial officer
+      - cco
+      - commercial director
+      - commercial general manager
+      - general manager commercial
+      - commercial operations
+      - revenue growth
+      - commercial excellence
+      - strategic partnerships
+      - enterprise sales
+      - contracts
+      - customer strategy
+      - growth strategy
+      - business development director
+      - head of business development
+      - commercial manager
+    responsibilities:
+      - commercial strategy
+      - key account strategy
+      - contract negotiation
+      - pricing strategy
+      - revenue growth
+
+  G_private_equity:
+    label: Private Equity and Ownership
+    titles:
+      - private equity
+      - pe portfolio
+      - portfolio operations
+      - operating partner
+      - value creation
+      - founder succession
+      - family business
+      - buy-and-build
+      - investment portfolio
+      - ceo succession
+      - portfolio performance
+    responsibilities:
+      - pe-backed
+      - private equity backed
+      - private equity owned
+      - value creation plan
+      - portfolio company
+
+  H_supply_chain_logistics:
+    label: Supply Chain and Logistics
+    titles:
+      - supply chain lead
+      - logistics lead
+      - distribution lead
+      - supply chain
+      - logistics
+      - freight
+      - distribution
+      - warehousing
+      - 3pl
+      - 4pl
+      - cold chain
+      - transport
+      - fleet
+      - network optimisation
+      - procurement
+      - ports
+      - rail
+      - intermodal
+      - terminals
+      - contract logistics
+    responsibilities:
+      - distribution network
+      - warehouse operations
+      - transport operations
+      - fleet management
+      - supply chain strategy
+
+  I_operations:
+    label: Operations and Service Delivery
+    titles:
+      - operations lead
+      - service delivery lead
+      - head of operations
+      - head of national operations
+      - national head of operations
+      - national operations
+      - regional operations
+      - multi-site operations
+      - service delivery
+      - business performance
+      - asset-intensive operations
+      - infrastructure services
+      - industrial services
+      - field services
+      - operational governance
+      - operating model
+      - operations director
+      - general manager operations
+      - operations manager
+    responsibilities:
+      - national operations
+      - multi-site
+      - operational performance
+      - service delivery
+      - safety performance
+
+  J_advisory_interim_nfp:
+    label: Advisory, Interim and Not-for-Profit
+    titles:
+      - principal consultant
+      - practice director
+      - management consulting
+      - advisory partner
+      - interim coo
+      - fractional coo
+      - interim general manager
+      - interim ceo
+      - contract executive
+      - fixed-term executive
+      - social enterprise
+      - nfp executive
+      - not-for-profit
+      - charity ceo
+      - foundation executive
+      - governance leadership
+    responsibilities:
+      - not-for-profit
+      - for-purpose
+      - acnc
+      - charity
+      - social impact
+
+  K_recruiter_terms:
+    label: Recruiter Terminology
+    titles:
+      - confidential appointment
+      - executive search
+      - newly created role
+      - growth mandate
+      - succession
+      - strategic appointment
+      - transformation mandate
+      - private equity backed
+      - founder-led
+      - business unit leadership
+    responsibilities: []
+
+# The nine disciplines audited independently every calendar day.
+# title_terms give a category priority when the title names it directly (e.g. CEO vs EGM).
+# core_queries run on every scheduled run; rotating_queries are spread across the day's runs
+# (run slot N takes every Nth query) so each one runs at least once per day.
+categories:
+  strategy:
+    label: Strategy and Strategic Planning
+    families: [C_strategy]
+    core_queries: [head of strategy, strategy director, chief strategy officer, general manager strategy]
+    rotating_queries: [corporate strategy, strategic planning, group strategy, strategy lead,
+                       strategic initiatives, corporate planning, strategy execution, enterprise strategy,
+                       strategic projects]
+  mna:
+    label: M&A and Corporate Development
+    families: [D_mergers_acquisitions]
+    core_queries: [corporate development, mergers and acquisitions, post-merger integration]
+    rotating_queries: [m&a director, integration director, head of corporate development, acquisitions,
+                       divestments, business integration, transaction execution, portfolio optimisation]
+  egm_group:
+    label: Executive General Manager and Group Leadership
+    families: [A_general_management, B_head_of_lead]
+    title_terms: [executive general manager, egm, group general manager, national general manager, regional general manager, state general manager, business unit general manager, country manager, chief of staff]
+    core_queries: [executive general manager, group general manager, national general manager,
+                   general manager]
+    rotating_queries: [egm, regional general manager, state general manager, business unit general manager,
+                       country manager, chief of staff]
+  transformation:
+    label: Enterprise Transformation and Turnaround
+    families: [E_transformation]
+    core_queries: [transformation director, head of transformation, business transformation]
+    rotating_queries: [turnaround, restructuring, operational excellence, business improvement lead,
+                       transformation lead, performance improvement, enterprise transformation,
+                       operational transformation, cost reduction]
+  commercial:
+    label: Commercial Strategy and Growth
+    families: [F_commercial]
+    core_queries: [commercial director, chief commercial officer, general manager commercial, head of commercial]
+    rotating_queries: [commercial lead, head of business development, strategic partnerships director,
+                       commercial excellence, revenue growth director, enterprise sales director,
+                       growth lead, customer strategy]
+  private_equity:
+    label: Private Equity and Portfolio Value Creation
+    families: [G_private_equity]
+    title_terms: [operating partner]
+    core_queries: [operating partner, portfolio operations, value creation]
+    rotating_queries: [private equity backed ceo, portfolio company general manager, buy-and-build,
+                       founder succession, family business general manager, ceo succession]
+  supply_chain_logistics:
+    label: Supply Chain, Logistics and Transport
+    families: [H_supply_chain_logistics]
+    core_queries: [head of logistics, head of supply chain, general manager supply chain,
+                   general manager logistics]
+    rotating_queries: [supply chain director, logistics director, head of distribution, general manager transport,
+                       cold chain general manager, contract logistics general manager, warehousing general manager,
+                       head of fleet, intermodal general manager, ports general manager, rail operations general manager,
+                       procurement director, 3pl general manager]
+  operations:
+    label: National Operations and Service Delivery
+    families: [I_operations, B_head_of_lead]
+    core_queries: [head of operations, operations director, general manager operations, national operations manager]
+    rotating_queries: [head of national operations, service delivery director, head of service delivery,
+                       infrastructure services general manager, industrial services general manager,
+                       field services general manager, multi-site operations, operations lead]
+  ceo_coo_advisory_nfp:
+    label: CEO, COO, Managing Director, Advisory and NFP Leadership
+    families: [A_general_management, J_advisory_interim_nfp, K_recruiter_terms]
+    title_terms: [ceo, chief executive officer, coo, chief operating officer, managing director, md, executive director, interim ceo, interim coo, fractional coo, ceo designate, managing partner, practice director, principal consultant, advisory partner]
+    core_queries: [chief executive officer, chief operating officer, managing director]
+    rotating_queries: [ceo, coo, interim coo, fractional coo, interim general manager, not-for-profit ceo,
+                       charity ceo, social enterprise ceo, principal consultant operations, practice director,
+                       advisory partner, executive director, confidential appointment]

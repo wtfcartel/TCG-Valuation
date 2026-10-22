@@ -1,0 +1,51 @@
+{% macro vlist(rows, empty) -%}
+{% if rows %}<table class="r-table"><tr><th>Role</th><th>Fit</th><th>Status</th><th>Location</th><th>Salary</th><th>Link</th></tr>
+{% for v in rows %}<tr><td><strong>{{ v.title }}</strong><br><span class="r-sub">{{ v.employer or ("Confidential" if v.is_confidential else "—") }}{% if v.recruiting_agency %} · via {{ v.recruiting_agency }}{% endif %}</span>
+  {% if v.ai_summary %}<br><span class="r-sub">{{ v.ai_summary|truncate(220) }}</span>{% endif %}</td>
+  <td>{% if v.overall_fit is not none %}{{ v.fit_class }} {{ "%.1f"|format(v.overall_fit) }}{% else %}prescore {{ "%.1f"|format(v.prescore) }}{% endif %}{% if v.conversion_assessment %}<br><span class="r-sub">{{ v.conversion_assessment }}</span>{% endif %}</td>
+  <td>{{ v.verification_status }}</td>
+  <td>{{ v.location_text or "—" }}<br><span class="r-sub">{{ v.geography }}</span></td>
+  <td>{% if v.salary_max %}${{ "{:,.0f}".format(v.salary_max) }}{% else %}Not disclosed{% endif %}</td>
+  <td>{% if v.advert_url %}<a href="{{ v.advert_url }}">original advert</a>{% else %}—{% endif %}</td></tr>{% endfor %}
+</table>{% else %}<p class="r-muted">{{ empty }}</p>{% endif %}
+{%- endmacro %}
+<h1>LogiDx executive recruitment report — {{ day.strftime("%A %d %B %Y") }}</h1>
+<p class="r-muted">Discovered vacancies are not the same as verified-open vacancies; each row shows its verification status. Sources that could not be searched are listed under coverage and are not counted as "no jobs".</p>
+
+<h2 class="r-h">New verified-open Priority vacancies ({{ new_priority|length }})</h2>
+{{ vlist(new_priority, "None today.") }}
+{% if priority_other %}<h2 class="r-h">Other open Priority vacancies</h2>{{ vlist(priority_other, "") }}{% endif %}
+<h2 class="r-h">Strong Adjacent opportunities (last 7 days)</h2>{{ vlist(adjacent, "None.") }}
+<h2 class="r-h">Exploratory (last 7 days)</h2>{{ vlist(exploratory, "None.") }}
+<h2 class="r-h">Relevant, not yet AI-assessed (last 7 days)</h2>{{ vlist(unassessed, "None — every relevant vacancy has been assessed.") }}
+<h2 class="r-h">High fit, geography-blocked</h2>{{ vlist(geo_blocked, "None.") }}
+<h2 class="r-h">Recruiter confirmation required</h2>{{ vlist(recruiter_confirm, "None.") }}
+<h2 class="r-h">Closed or stale today</h2>{{ vlist(closed_stale, "None.") }}
+<h2 class="r-h">Previously applied / rejected, seen again today</h2>{{ vlist(prior, "None.") }}
+
+<h2 class="r-h">Application and correspondence changes</h2>
+<p class="r-muted">{{ gmail_note }}</p>
+{% if status_events %}<ul>{% for e in status_events %}<li>{{ e.vacancy.title }}: {{ e.detail.get("from") }} → {{ e.detail.get("to") }}</li>{% endfor %}</ul>{% else %}<p class="r-muted">No status changes recorded today.</p>{% endif %}
+
+<h2 class="r-h">Executive discipline coverage</h2>
+<table class="r-table"><tr><th>Discipline</th><th>Status</th><th>Queries run / planned</th><th>Relevant</th><th>Note</th></tr>
+{% for c in categories %}<tr><td>{{ c.label }}</td><td>{{ c.status }}</td><td>{{ c.executed_queries|length }} / {{ c.planned_queries|length }}</td><td>{{ c.relevant }}</td><td class="r-sub">{{ c.note }}</td></tr>{% endfor %}</table>
+
+<h2 class="r-h">Job-board coverage</h2>
+<table class="r-table"><tr><th>Source</th><th>Status</th><th>Results</th><th>Relevant</th><th>Verified open</th><th>Limitation</th></tr>
+{% for s in sources %}<tr><td>{{ s.label }}</td><td>{{ s.status }}{% if s.failed %} ({{ s.failed }} failed){% endif %}</td><td>{{ s.results }}</td><td>{{ s.relevant }}</td><td>{{ s.verified_open }}</td><td class="r-sub">{{ (s.limitations[:1] + s.errors[:1])|join(" · ") }}</td></tr>{% endfor %}</table>
+
+<h2 class="r-h">Recall tests</h2>
+<p>Known vacancies found: {{ recall.found }} of {{ recall.live_cases }} · access gaps: {{ recall.access_gaps }} · recall on accessible cases: {{ "%.0f%%"|format(recall.recall_accessible * 100) if recall.recall_accessible is not none else "n/a (no accessible cases)" }} · taxonomy fixtures: {{ recall.fixtures_passed }}/{{ recall.fixtures_total }}</p>
+
+<h2 class="r-h">Errors, incomplete searches and remediation</h2>
+{% if failures %}<ul>{% for f in failures[:15] %}<li class="r-err">{{ f.source_label }}{% if f.query %} “{{ f.query }}”{% endif %}: {{ f.status }} — {{ f.error }}</li>{% endfor %}</ul>{% endif %}
+{% if ai_errors %}<p class="r-err">{{ ai_errors|length }} AI assessment(s) failed or returned invalid output.</p>{% endif %}
+{% if remediation %}<ul>{% for r in remediation[:25] %}<li>{{ r }}</li>{% endfor %}</ul>{% else %}<p class="r-muted">Nothing outstanding.</p>{% endif %}
+
+<h2 class="r-h">Documents generated</h2>
+{% if docs %}<ul>{% for d in docs %}<li>{{ d.kind }} v{{ d.version }} — {{ d.filename }}</li>{% endfor %}</ul>{% else %}<p class="r-muted">None today.</p>{% endif %}
+
+<h2 class="r-h">Notification delivery</h2>
+{% if notifications %}<ul>{% for n in notifications %}<li>{{ n.dedupe_key }}: {{ n.status }}{% if n.provider_response %} — {{ n.provider_response }}{% endif %}{% if n.error %} — {{ n.error }}{% endif %}</li>{% endfor %}</ul>{% else %}<p class="r-muted">No earlier notifications.</p>{% endif %}
+<p class="r-muted">Runs today: {% for r in runs %}{{ r.slot or r.trigger }} {{ r.status }}{% if not loop.last %}, {% endif %}{% else %}none{% endfor %}.</p>

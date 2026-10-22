@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}LogiDx{% endblock %} · LogiDx Executive Search</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+{% if user %}
+<header class="top">
+  <a class="brand" href="/">LogiDx <span>Executive Search</span></a>
+  <form method="post" action="/runs" class="run-now">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button type="submit" {% if running %}disabled{% endif %}>{% if running %}Run in progress…{% else %}Run now{% endif %}</button>
+  </form>
+  <form method="post" action="/logout" class="logout">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button type="submit" class="link">Sign out</button>
+  </form>
+</header>
+<nav class="tabs" aria-label="Main">
+  {% set items = [("/", "Overview"), ("/jobs", "Job discovery"), ("/priority", "Priority"), ("/disciplines", "Disciplines"),
+                  ("/applications", "Applications"), ("/recruiters", "Recruiters"), ("/coverage", "Search coverage"),
+                  ("/recall", "Recall & QA"), ("/report", "Daily report"), ("/documents", "Documents"),
+                  ("/import", "Import"), ("/runs", "Runs"), ("/settings", "Settings")] %}
+  {% for href, label in items %}
+  <a href="{{ href }}" {% if (href == "/" and nav == "/") or (href != "/" and nav.startswith(href)) %}aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>
+{% endif %}
+<main>
+  {% if flash %}<p class="flash" role="status">{{ flash }}</p>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="foot">Times shown in Australia/Melbourne. Coverage is never assumed: sources that could not be searched are listed on Search coverage.</footer>
+</body>
+</html>

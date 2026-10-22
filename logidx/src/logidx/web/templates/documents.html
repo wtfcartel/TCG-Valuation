@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Documents{% endblock %}
+{% block content %}
+<h1>Documents</h1>
+<section class="card">
+  <h2>Master CV</h2>
+  <p class="muted">Upload the Executive CV (DOCX or PDF, max 5 MB). The extracted text becomes the primary evidence source for AI assessment. Review it below — nothing is inferred beyond what the file says.</p>
+  <form method="post" action="/documents/master-cv" enctype="multipart/form-data" class="inline">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="file" name="file" accept=".docx,.pdf" required>
+    <button type="submit">Upload</button>
+  </form>
+</section>
+<section class="card">
+  <h2>All documents</h2>
+  {% for d in docs %}
+  <details {% if loop.first %}open{% endif %}><summary><strong>{{ d.kind }}</strong> v{{ d.version }} — {{ d.filename }} · {{ d.created_at|local }} · sha256 {{ d.sha256[:12] }}{% if d.vacancy_id %} · <a href="/jobs/{{ d.vacancy_id }}">vacancy</a>{% endif %}</summary>
+    {% if d.extracted_text %}<pre class="description">{{ d.extracted_text }}</pre>{% endif %}</details>
+  {% else %}<p class="muted">No documents yet.</p>{% endfor %}
+  <p class="small muted">Tailored CV, cover letter and selection-criteria generation is planned for Phase 4 and will be gated on a fresh VERIFIED OPEN check.</p>
+</section>
+{% endblock %}
