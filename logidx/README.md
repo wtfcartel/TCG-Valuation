@@ -15,6 +15,7 @@ and structured to support more users later.
 | [docs/adr/0001-foundation.md](docs/adr/0001-foundation.md) | Architecture decision record |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Components, data flow, data model, scheduling, security |
 | [docs/02-sources.md](docs/02-sources.md) | Every target source: status, access method, how to enable it |
+| [docs/03-deploy-vercel.md](docs/03-deploy-vercel.md) | Hosting on Vercel as a second project next to Cardcore |
 | [TASKS.md](TASKS.md) | What is implemented, tested, blocked or planned |
 | [CLAUDE.md](CLAUDE.md) | Conventions and state for future development sessions |
 
@@ -57,6 +58,12 @@ Run a cycle at any time with the **Run now** button or `logidx run`.
 | `logidx recall` | Evaluate known-vacancy cases and taxonomy fixtures |
 | `logidx report [--send]` | Print today's report, or email it |
 
+## Hosted on Vercel
+
+See [docs/03-deploy-vercel.md](docs/03-deploy-vercel.md): import the repository as a second Vercel project with
+Root Directory `logidx`, connect a new Neon database, and set `LOGIDX_SECRET_KEY`, `CRON_SECRET`,
+`LOGIDX_ADMIN_EMAIL` and `LOGIDX_ADMIN_PASSWORD`.
+
 ## Production (Docker Compose, PostgreSQL)
 
 ```bash
@@ -80,7 +87,7 @@ The Compose file has not been run end to end yet: the build environment had no D
 ## Tests
 
 ```bash
-pytest -p no:warnings          # 139 offline tests; external services are mocked
+pytest -p no:warnings          # 148 offline tests; external services are mocked
 pytest -m live                 # reserved for live integration tests (none written yet)
 ```
 

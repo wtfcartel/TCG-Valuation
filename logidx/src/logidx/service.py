@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
@@ -20,13 +21,15 @@ from logidx.settings import get_settings
 from logidx.sources.http import HttpClient
 
 log = logging.getLogger(__name__)
+DISCOVERY_SHARE = 0.7
+REPORT_RESERVE_SECONDS = 20
 
 
 def scheduled_key(local_day: str, slot: str) -> str:
     return f"scheduled:{local_day}:{slot}"
 
 
-def post_run(session: Session, run: Run, *, send_daily_report: bool = False) -> None:
+def post_run(session: Session, run: Run, *, send_daily_report: bool = False, deadline: float | None = None) -> None:
     """AI assessment, recall evaluation and (for the report slot) the daily report. Each step isolated."""
     counts = dict(run.counts or {})
     schedule = get_schedule(session)
@@ -35,7 +38,8 @@ def post_run(session: Session, run: Run, *, send_daily_report: bool = False) -> 
         counts["ai"] = "skipped: no AI provider configured (XAI_API_KEY)" if schedule.ai_enabled else "disabled"
     else:
         try:
-            counts["ai"] = assess_pending(session, provider)
+            ai_deadline = deadline - REPORT_RESERVE_SECONDS if deadline is not None else None
+            counts["ai"] = assess_pending(session, provider, deadline=ai_deadline)
         except Exception as exc:
             log.exception("AI assessment step failed")
             counts["ai"] = f"failed: {type(exc).__name__}"
@@ -85,12 +89,16 @@ def execute(
         session.commit()
         if send_daily_report is None:
             send_daily_report = slot is not None and slot == get_schedule(session).report_slot
+        budget = get_settings().run_time_budget_seconds or None
+        deadline = time.monotonic() + budget if budget else None
         run = run_discovery(
             session,
             run,
             http=http,
             plan=plan,
-            post_run=lambda s, r: post_run(s, r, send_daily_report=bool(send_daily_report)),
+            # Discovery gets most of the budget; AI, recall and the report share the rest.
+            time_budget=budget * DISCOVERY_SHARE if budget else None,
+            post_run=lambda s, r: post_run(s, r, send_daily_report=bool(send_daily_report), deadline=deadline),
         )
         return run
 

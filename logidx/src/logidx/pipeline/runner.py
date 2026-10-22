@@ -37,6 +37,7 @@ LOCK_NAME = "discovery"
 NOT_SEEN_GRACE = timedelta(days=3)
 WINDOWED_RETIRE = timedelta(days=21)
 MAX_CONSECUTIVE_BLOCKS = 3
+TIME_BUDGET_NOTE = "skipped: this run's time budget was used up (serverless request limit)"
 
 
 @dataclass
@@ -92,8 +93,11 @@ def run_discovery(
     taxonomy: Taxonomy | None = None,
     now: Callable[[], datetime] | None = None,
     post_run: Callable[[Session, Run], None] | None = None,
+    time_budget: float | None = None,
 ) -> Run:
+    """`time_budget` (seconds) stops new searches once spent — used on serverless hosts with a request limit."""
     clock = now or (lambda: datetime.now(UTC))
+    deadline = time.monotonic() + time_budget if time_budget else None
     holder = f"run:{run.id}"
     if not locks.acquire(session, LOCK_NAME, holder):
         run.status, run.finished_at = RunStatus.SKIPPED, clock()
@@ -103,7 +107,7 @@ def run_discovery(
     own_http = http is None
     http = http or HttpClient()
     try:
-        _execute(session, run, http, plan or default_plan(), taxonomy or default_taxonomy(), clock)
+        _execute(session, run, http, plan or default_plan(), taxonomy or default_taxonomy(), clock, deadline)
         if post_run is not None:
             try:
                 post_run(session, run)
@@ -125,8 +129,17 @@ def run_discovery(
 
 
 def _execute(
-    session: Session, run: Run, http: HttpClient, plan: RunPlan, taxonomy: Taxonomy, clock: Callable[[], datetime]
+    session: Session,
+    run: Run,
+    http: HttpClient,
+    plan: RunPlan,
+    taxonomy: Taxonomy,
+    clock: Callable[[], datetime],
+    deadline: float | None = None,
 ) -> None:
+    def out_of_time() -> bool:
+        return deadline is not None and time.monotonic() >= deadline
+
     profile = get_profile(session)
     schedule = get_schedule(session)
     slot_index = schedule.slot_index(run.slot) if run.slot else _manual_slot_index(session, len(schedule.slots))
@@ -186,7 +199,7 @@ def _execute(
         for category, qlist in queries.items():
             for q in qlist:
                 cat_queries[category].append(q)
-                if blocks >= MAX_CONSECUTIVE_BLOCKS:
+                if blocks >= MAX_CONSECUTIVE_BLOCKS or out_of_time():
                     session.add(
                         SourceSearch(
                             run=run,
@@ -197,7 +210,9 @@ def _execute(
                             access_method=qs.access_method,
                             status=SearchStatus.NOT_SEARCHED,
                             started_at=clock(),
-                            limitation="skipped after repeated access refusals this run",
+                            limitation=TIME_BUDGET_NOTE
+                            if blocks < MAX_CONSECUTIVE_BLOCKS
+                            else "skipped after repeated access refusals this run",
                         )
                     )
                     cat_failed[category].add(qs.label)
@@ -261,6 +276,22 @@ def _execute(
                     started_at=clock(),
                 )
             )
+            continue
+        if out_of_time():
+            session.add(
+                SourceSearch(
+                    run=run,
+                    source=source.name,
+                    source_label=label,
+                    board=board.key,
+                    access_method=source.access_method,
+                    status=SearchStatus.NOT_SEARCHED,
+                    limitation=TIME_BUDGET_NOTE,
+                    started_at=clock(),
+                )
+            )
+            for cat in taxonomy.category_keys:
+                cat_failed[cat].add(label)
             continue
         search = _search_row(run, source.name, label, source.access_method, clock, board=board.key)
         session.add(search)

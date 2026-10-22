@@ -12,14 +12,9 @@ from sqlalchemy import select
 
 
 def _initdb(_: argparse.Namespace) -> int:
-    from logidx import recall
-    from logidx.db import run_migrations, session_scope
-    from logidx.profile import get_profile, save_profile
+    from logidx.bootstrap import ensure_ready
 
-    run_migrations()
-    with session_scope() as s:
-        save_profile(s, get_profile(s))  # seeds from config/profile.yaml on first run
-        recall.sync_cases(s)
+    ensure_ready()
     print("Database ready.")
     return 0
 

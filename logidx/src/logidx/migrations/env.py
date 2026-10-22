@@ -21,6 +21,12 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+    shared = config.attributes.get("connection")
+    if shared is not None:  # run_migrations passes a connection that already holds the advisory lock
+        context.configure(connection=shared, target_metadata=target_metadata, render_as_batch=True)
+        with context.begin_transaction():
+            context.run_migrations()
+        return
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}), prefix="sqlalchemy.", poolclass=pool.NullPool
     )

@@ -46,6 +46,8 @@ Legend: [x] done and tested offline · [~] partly done · [ ] not started · **B
 - [ ] Approval-gated outbound communication (never automatic)
 
 ## Phase 5 — production hardening
+- [x] Vercel deployment (second project, Root Directory `logidx`): ASGI entry point, Neon URL support, advisory-locked migrate and seed on cold start, env-based first-user bootstrap, cron endpoint with `CRON_SECRET`, per-run time budget, synchronous Run now. `vercel build` and the built function on PostgreSQL verified locally
+- [ ] Create the Vercel project and Neon database, then deploy (needs the owner's Vercel account — steps in `docs/03-deploy-vercel.md`)
 - [x] Docker Compose (PostgreSQL, app, nightly backups), health endpoint, JSON logs with secret redaction
 - [ ] **BLOCKED** `docker compose up` not exercised: no Docker daemon in the build environment
 - [ ] CI run on GitHub (workflow added: `.github/workflows/logidx.yml`)

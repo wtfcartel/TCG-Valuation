@@ -139,6 +139,9 @@ def create_app(start_scheduler: bool | None = None) -> FastAPI:
 
     app = FastAPI(title="LogiDx Executive Search", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     secret = settings.secret_key.get_secret_value()
+    if not secret and settings.serverless:
+        # Each serverless instance would invent its own key and sign users out at random.
+        raise RuntimeError("LOGIDX_SECRET_KEY must be set when running serverless")
     if not secret:
         secret = secrets.token_urlsafe(48)
         log.warning("LOGIDX_SECRET_KEY not set: using a random key; sessions end when the server restarts")
@@ -559,9 +562,35 @@ def create_app(start_scheduler: bool | None = None) -> FastAPI:
         from logidx.service import execute
 
         email = user.email
+        if settings.serverless:  # background threads do not outlive the request on serverless hosts
+            run = execute(trigger="manual", actor=email)
+            if run is None:
+                flash(request, "Run not started (duplicate).")
+                return RedirectResponse("/runs", status_code=303)
+            flash(request, f"Run finished: {run.status}.")
+            return RedirectResponse(f"/runs/{run.id}", status_code=303)
         threading.Thread(target=lambda: execute(trigger="manual", actor=email), daemon=True).start()
         flash(request, "Discovery run started. Refresh this page to follow progress.")
         return RedirectResponse("/runs", status_code=303)
+
+    @app.get("/cron/run")
+    def cron_run(request: Request, slot: str) -> Any:
+        """Scheduled run for hosts without an in-process scheduler (Vercel Cron sends `Bearer CRON_SECRET`)."""
+        expected = settings.cron_secret.get_secret_value()
+        if not expected:
+            raise HTTPException(503, "CRON_SECRET is not configured")
+        if not csrf_matches(f"Bearer {expected}", request.headers.get("authorization")):
+            raise HTTPException(401, "invalid cron credentials")
+        try:
+            ScheduleConfig(slots=[slot])
+        except ValidationError as exc:
+            raise HTTPException(400, "slot must be HH:MM") from exc
+        from logidx.service import run_scheduled_slot
+
+        run = run_scheduled_slot(slot)
+        if run is None:
+            return {"status": "duplicate", "detail": f"slot {slot} already ran today"}
+        return {"status": run.status, "run_id": run.id, "error": run.error}
 
     @app.get("/recall", response_class=HTMLResponse)
     def recall_page(

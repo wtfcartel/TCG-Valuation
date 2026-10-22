@@ -158,8 +158,10 @@ def test_rss_respects_robots_disallow(http):
 
 
 def test_rss_rejects_hostile_xml(http):
-    bomb = (b'<?xml version="1.0"?><!DOCTYPE r [<!ENTITY a "aaaa"><!ENTITY b "&a;&a;&a;">]>'
-            b"<rss><channel>&b;</channel></rss>")
+    bomb = (
+        b'<?xml version="1.0"?><!DOCTYPE r [<!ENTITY a "aaaa"><!ENTITY b "&a;&a;&a;">]>'
+        b"<rss><channel>&b;</channel></rss>"
+    )
     with respx.mock:
         respx.get("https://x.example/robots.txt").mock(return_value=httpx.Response(404))
         respx.get("https://x.example/f.xml").mock(return_value=httpx.Response(200, content=bomb))

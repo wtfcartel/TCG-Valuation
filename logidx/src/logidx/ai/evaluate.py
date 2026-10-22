@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import re
+import time as monotonic_clock
 from dataclasses import dataclass
 from datetime import UTC, datetime, time
 
@@ -302,13 +303,22 @@ def pending_vacancies(session: Session, limit: int) -> list[Vacancy]:
 
 
 def assess_pending(
-    session: Session, provider: LLMProvider, *, settings: Settings | None = None, limit: int | None = None
+    session: Session,
+    provider: LLMProvider,
+    *,
+    settings: Settings | None = None,
+    limit: int | None = None,
+    deadline: float | None = None,
 ) -> dict[str, int | float | str]:
+    """Assess pending vacancies within the daily cost budget and, if given, a time.monotonic() deadline."""
     settings = settings or get_settings()
     limit = settings.ai_max_assessments_per_run if limit is None else limit
     done = invalid = 0
     stopped = ""
     for vacancy in pending_vacancies(session, limit):
+        if deadline is not None and monotonic_clock.monotonic() >= deadline:
+            stopped = "time budget reached; remaining vacancies are assessed on the next run"
+            break
         if spent_today(session, settings) >= settings.ai_daily_budget_usd:
             stopped = f"daily AI budget of US${settings.ai_daily_budget_usd:.2f} reached"
             break

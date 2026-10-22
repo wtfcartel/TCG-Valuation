@@ -1,0 +1,21 @@
+# Runtime dependencies for Vercel's Python builder. Keep in step with pyproject.toml
+# (tests/test_deploy.py checks this).
+fastapi>=0.115
+uvicorn[standard]>=0.30
+jinja2>=3.1
+python-multipart>=0.0.9
+itsdangerous>=2.2
+sqlalchemy>=2.0.30
+alembic>=1.13
+psycopg[binary]>=3.2
+pydantic>=2.7
+pydantic-settings>=2.3
+httpx>=0.27
+apscheduler>=3.10,<4
+rapidfuzz>=3.9
+pyyaml>=6.0
+beautifulsoup4>=4.12
+defusedxml>=0.7
+python-docx>=1.1
+pypdf>=4.2
+tzdata>=2024.1

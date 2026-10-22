@@ -30,6 +30,11 @@ LogiDx lives in `logidx/`, inside a repository that also contains an unrelated a
   "(Fixture)"). Mark live tests `@pytest.mark.live`.
 - Commands: `pip install -e '.[dev]'`, `ruff check src tests`, `pytest -p no:warnings`.
 
+## Hosting
+Two targets: Docker Compose (long-running, in-process APScheduler) and Vercel (`api/index.py`, `vercel.json`;
+`VERCEL=1` turns on serverless mode — no scheduler, cron endpoint, time budget). Keep both working.
+`requirements.txt` must mirror `pyproject.toml` dependencies (a test enforces it).
+
 ## Current state (2026-10-22)
 Phases 0–2 are implemented. Phase 3 is largely implemented. Phase 4 is partly done (tracking, CV import, manual
 import, recruiters). No live integration has been verified — see TASKS.md for the blocked items.
