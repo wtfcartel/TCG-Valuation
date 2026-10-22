@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import vacancy_rows %}
+{% block title %}Job discovery{% endblock %}
+{% block content %}
+<h1>Job discovery</h1>
+<form method="get" action="/jobs" class="filters">
+  <input type="search" name="q" value="{{ params.q or '' }}" placeholder="Search title, employer, description">
+  <select name="category"><option value="">All disciplines</option>
+    {% for k in taxonomy.category_keys %}<option value="{{ k }}" {% if params.category == k %}selected{% endif %}>{{ taxonomy.category_label(k) }}</option>{% endfor %}
+  </select>
+  <select name="fit_class"><option value="">Any fit</option>
+    {% for f in FitClass %}<option {% if params.fit_class == f.value %}selected{% endif %}>{{ f.value }}</option>{% endfor %}
+  </select>
+  <select name="verification_status"><option value="">Any verification</option>
+    {% for s in Verification %}<option {% if params.verification_status == s.value %}selected{% endif %}>{{ s.value }}</option>{% endfor %}
+  </select>
+  <select name="geography"><option value="">Any geography</option>
+    {% for g in geographies %}<option {% if params.geography == g.value %}selected{% endif %}>{{ g.value }}</option>{% endfor %}
+  </select>
+  <select name="sort">
+    <option value="fit" {% if params.sort == "fit" %}selected{% endif %}>Best fit</option>
+    <option value="new" {% if params.sort == "new" %}selected{% endif %}>Newest found</option>
+    <option value="posted" {% if params.sort == "posted" %}selected{% endif %}>Newest posted</option>
+  </select>
+  <label class="check"><input type="checkbox" name="workable" value="1" {% if params.workable == "1" %}checked{% endif %}> Melbourne-workable</label>
+  <label class="check"><input type="hidden" name="relevant" value="0"><input type="checkbox" name="relevant" value="1" {% if params.get("relevant", "1") == "1" %}checked{% endif %}> Relevant only</label>
+  <label class="check"><input type="checkbox" name="include_expired" value="1" {% if params.include_expired == "1" %}checked{% endif %}> Include expired</label>
+  <button type="submit">Filter</button>
+</form>
+{{ vacancy_rows(rows, taxonomy) }}
+<p class="pager">
+  {% if page > 1 %}<a href="?{{ dict(params, page=page - 1)|urlencode }}">← Previous</a>{% endif %}
+  {% if has_more %}<a href="?{{ dict(params, page=page + 1)|urlencode }}">Next →</a>{% endif %}
+</p>
+{% endblock %}

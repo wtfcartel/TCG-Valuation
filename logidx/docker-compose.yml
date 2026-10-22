@@ -1,0 +1,54 @@
+# Self-hosted deployment: PostgreSQL + LogiDx (dashboard and scheduler in one process) + nightly backups.
+# Publish only through a TLS-terminating reverse proxy (Caddy, Traefik, nginx); the app binds to localhost.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: logidx
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: logidx
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logidx"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build: .
+    env_file: .env
+    environment:
+      LOGIDX_DATABASE_URL: postgresql+psycopg://logidx:${POSTGRES_PASSWORD}@db:5432/logidx
+      LOGIDX_TIMEZONE: Australia/Melbourne
+      TZ: Australia/Melbourne
+    volumes:
+      - appdata:/data
+      - ./config:/app/config        # edit taxonomy / watchlist / recall cases without rebuilding
+    ports: ["127.0.0.1:8780:8780"]
+    depends_on:
+      db: {condition: service_healthy}
+    restart: unless-stopped
+
+  backup:
+    # Nightly pg_dump at 02:15 Melbourne time into ./backups, keeping 14 days.
+    image: postgres:16
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Australia/Melbourne
+    volumes: ["./backups:/backups"]
+    entrypoint:
+      - sh
+      - -c
+      - >-
+        while true; do
+        if [ "$$(date +%H%M)" = 0215 ]; then
+        pg_dump -h db -U logidx logidx | gzip > /backups/logidx-$$(date +%F).sql.gz;
+        find /backups -name '*.sql.gz' -mtime +14 -delete; sleep 60; fi;
+        sleep 30; done
+    depends_on:
+      db: {condition: service_healthy}
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  appdata:

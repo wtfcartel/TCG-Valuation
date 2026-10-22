@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Import a vacancy{% endblock %}
+{% block content %}
+<h1>Import a vacancy</h1>
+<p class="muted">For sources LogiDx cannot search automatically (SEEK, LinkedIn, Indeed, Jora, CareerOne…): paste a vacancy you are viewing yourself. It is classified, de-duplicated and assessed like any other. LogiDx does not fetch the page with your login.</p>
+<form method="post" action="/import" class="grid-form card">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Found on <select name="origin">
+    {% for o in ["seek", "linkedin", "indeed", "jora", "careerone", "recruiter email", "employer site", "other"] %}<option>{{ o }}</option>{% endfor %}</select></label>
+  <label>Advert URL <input name="url" type="url" required></label>
+  <label>Title <input name="title" required maxlength="500"></label>
+  <label>Employer <input name="employer"></label>
+  <label>Recruiting agency <input name="agency"></label>
+  <label>Location <input name="location"></label>
+  <label>Salary text <input name="salary_text" placeholder="e.g. $220k–$250k + super"></label>
+  <label class="wide">Description <textarea name="description" rows="12"></textarea></label>
+  <button type="submit">Import</button>
+</form>
+{% endblock %}

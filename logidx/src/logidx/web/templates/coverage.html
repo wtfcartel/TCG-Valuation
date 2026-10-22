@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_macros.html" import source_matrix, category_matrix %}
+{% block title %}Search coverage{% endblock %}
+{% block content %}
+<h1>Search coverage — {{ day.strftime("%A %d %B %Y") }}</h1>
+<p class="pager"><a href="/coverage?day={{ prev.isoformat() }}">← {{ prev.strftime("%d %b") }}</a> <a href="/coverage?day={{ next.isoformat() }}">{{ next.strftime("%d %b") }} →</a></p>
+<p class="notice">A source marked NOT SEARCHED, FAILED or ACCESS BLOCKED returned no information — its zero is not evidence that no vacancies exist.</p>
+<section class="card"><h2>By discipline</h2>{{ category_matrix(categories) }}</section>
+<section class="card"><h2>By source</h2>{{ source_matrix(sources) }}</section>
+<section class="card">
+  <h2>Restricted sources and compliant routes</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Source</th><th>Why it is not searched automatically</th><th>Compliant routes</th></tr></thead>
+    <tbody>{% for r in restricted %}<tr><td>{{ r.label }}</td><td class="small">{{ r.limitation }}</td><td class="small">{{ r.compliant_routes|join("; ") }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

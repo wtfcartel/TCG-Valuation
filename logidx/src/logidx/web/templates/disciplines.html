@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Executive disciplines{% endblock %}
+{% block content %}
+<h1>Executive disciplines</h1>
+<div class="cards">
+{% for c in cards %}
+  {% set cov = categories[loop.index0] %}
+  <section class="card">
+    <h2><a href="/jobs?category={{ c.key }}">{{ c.label }}</a></h2>
+    <p>{{ badge(cov.status, "cat") }} <span class="small">{{ c.count }} active · {{ c.priority }} Priority · {{ c.verified }} verified open</span></p>
+    <ul class="small">{% for v in c.top %}<li><a href="/jobs/{{ v.id }}">{{ v.title }}</a> — {{ v.employer or v.recruiting_agency or "confidential" }}</li>{% else %}<li class="muted">No active relevant vacancies recorded.</li>{% endfor %}</ul>
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

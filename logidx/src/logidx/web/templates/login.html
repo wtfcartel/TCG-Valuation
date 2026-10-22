@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>LogiDx Executive Search</h1>
+  {% if not has_users %}
+  <p class="notice">No account exists yet. Create one on the server: <code>logidx create-user you@example.com</code></p>
+  {% endif %}
+  {% if error %}<p class="err">{{ error }}</p>{% endif %}
+  <form method="post" action="/login" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Email <input type="email" name="email" autocomplete="username" required></label>
+    <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
+    <button type="submit">Sign in</button>
+  </form>
+</section>
+{% endblock %}

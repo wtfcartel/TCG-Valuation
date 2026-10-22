@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_macros.html" import vacancy_rows, source_matrix, category_matrix, badge %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<h1>Overview</h1>
+<div class="kpis">
+  <div class="kpi"><span>{{ new_today }}</span>relevant found today</div>
+  <div class="kpi"><span>{{ priority|length }}</span>Priority (open)</div>
+  <div class="kpi"><span>{{ relevant_total }}</span>relevant active</div>
+  <div class="kpi"><span>{{ pipeline["APPLIED"] + pipeline["INTERVIEWING"] + pipeline["OFFER"] }}</span>open applications</div>
+  <div class="kpi"><span>{{ pipeline["INTERVIEWING"] }}</span>interviewing</div>
+  <div class="kpi"><span>{{ categories|selectattr("status", "equalto", "COMPLETE")|list|length }}/9</span>disciplines complete today</div>
+</div>
+
+<section class="card">
+  <h2>Last run</h2>
+  {% if last_run %}
+  <p><a href="/runs/{{ last_run.id }}">#{{ last_run.id }}</a> {{ badge(last_run.status, "run") }} {{ last_run.trigger }}{% if last_run.slot %} {{ last_run.slot }}{% endif %},
+     started {{ last_run.started_at|local }}{% if last_run.finished_at %}, finished {{ last_run.finished_at|local("%H:%M") }}{% endif %}.
+     {% if last_run.counts.sources_not_searched %}<span class="warn">{{ last_run.counts.sources_not_searched }} sources/boards not searched</span> — see Search coverage.{% endif %}
+     {% if last_run.error %}<span class="err">{{ last_run.error }}</span>{% endif %}</p>
+  {% else %}<p>No runs yet. Use <strong>Run now</strong> or wait for the next scheduled run.</p>{% endif %}
+</section>
+
+<section class="card">
+  <h2>Priority opportunities</h2>
+  {% if priority %}{{ vacancy_rows(priority) }}{% else %}<p class="muted">No Priority-rated vacancies yet{% if not top_unassessed %}.{% else %} — AI assessment may not have run; the highest-prescored unassessed roles are below.{% endif %}</p>{% endif %}
+  {% if top_unassessed %}<h3>Highest-scoring, not yet assessed</h3>{{ vacancy_rows(top_unassessed) }}{% endif %}
+</section>
+
+<section class="card">
+  <h2>Discipline coverage today</h2>
+  {{ category_matrix(categories) }}
+</section>
+
+<section class="card">
+  <h2>Source health today</h2>
+  {{ source_matrix(sources) }}
+</section>
+{% endblock %}

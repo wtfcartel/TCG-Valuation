@@ -1,0 +1,43 @@
+{% macro vlist(rows, empty) -%}
+{% for v in rows %}- {{ v.title }} — {{ v.employer or v.recruiting_agency or "Confidential" }} | {% if v.overall_fit is not none %}{{ v.fit_class }} {{ "%.1f"|format(v.overall_fit) }}{% else %}prescore {{ "%.1f"|format(v.prescore) }}{% endif %} | {{ v.verification_status }} | {{ v.location_text or "—" }} ({{ v.geography }}){% if v.advert_url %}
+  {{ v.advert_url }}{% endif %}
+{% else %}{{ empty }}
+{% endfor %}
+{%- endmacro -%}
+LogiDx executive recruitment report — {{ day.strftime("%A %d %B %Y") }}
+
+Discovered is not the same as verified open. Sources that could not be searched are listed below and are not counted as "no jobs".
+
+NEW VERIFIED-OPEN PRIORITY ({{ new_priority|length }})
+{{ vlist(new_priority, "None today.") }}
+STRONG ADJACENT (7 days)
+{{ vlist(adjacent, "None.") }}
+EXPLORATORY (7 days)
+{{ vlist(exploratory, "None.") }}
+RELEVANT, NOT YET AI-ASSESSED (7 days)
+{{ vlist(unassessed, "None.") }}
+HIGH FIT, GEOGRAPHY-BLOCKED
+{{ vlist(geo_blocked, "None.") }}
+RECRUITER CONFIRMATION REQUIRED
+{{ vlist(recruiter_confirm, "None.") }}
+CLOSED OR STALE TODAY
+{{ vlist(closed_stale, "None.") }}
+PREVIOUSLY APPLIED / REJECTED, SEEN AGAIN
+{{ vlist(prior, "None.") }}
+APPLICATION CHANGES
+{{ gmail_note }}
+{% for e in status_events %}- {{ e.vacancy.title }}: {{ e.detail.get("from") }} -> {{ e.detail.get("to") }}
+{% else %}None recorded today.
+{% endfor %}
+DISCIPLINE COVERAGE
+{% for c in categories %}- {{ c.label }}: {{ c.status }} ({{ c.executed_queries|length }}/{{ c.planned_queries|length }} queries) {{ c.note }}
+{% endfor %}
+SOURCE COVERAGE
+{% for s in sources %}- {{ s.label }}: {{ s.status }}, {{ s.results }} results, {{ s.relevant }} relevant{% if s.limitations %} — {{ s.limitations[0] }}{% endif %}
+{% endfor %}
+RECALL: {{ recall.found }}/{{ recall.live_cases }} known vacancies found, {{ recall.access_gaps }} access gaps, fixtures {{ recall.fixtures_passed }}/{{ recall.fixtures_total }}
+
+REMEDIATION
+{% for r in remediation[:25] %}- {{ r }}
+{% else %}Nothing outstanding.
+{% endfor %}

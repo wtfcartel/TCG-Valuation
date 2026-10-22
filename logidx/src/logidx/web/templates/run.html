@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Run {{ run.id }}{% endblock %}
+{% block content %}
+<p><a href="/runs">← Runs</a></p>
+<h1>Run #{{ run.id }} {{ badge(run.status, "run") }}</h1>
+<p>{{ run.trigger }}{% if run.slot %} slot {{ run.slot }}{% endif %} · started {{ run.started_at|local }}{% if run.finished_at %} · finished {{ run.finished_at|local("%H:%M:%S") }}{% endif %}</p>
+{% if run.error %}<p class="err">{{ run.error }}</p>{% endif %}
+<section class="card"><h2>Counts</h2><pre class="small">{{ run.counts|tojson(indent=2) }}</pre></section>
+<section class="card">
+  <h2>Discipline audit</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Discipline</th><th>Complete</th><th>Queries</th><th>Succeeded</th><th>Failed</th><th>Results</th><th>Note</th></tr></thead>
+    <tbody>{% for a in run.category_audits %}<tr><td>{{ taxonomy.category_label(a.category) }}</td><td>{{ "yes" if a.complete else "NO" }}</td>
+      <td class="small">{{ a.queries|join(", ") or "—" }}</td><td class="small">{{ a.sources_succeeded|join(", ") or "—" }}</td>
+      <td class="small err">{{ a.sources_failed|join(", ") }}</td><td>{{ a.results_retrieved }}</td><td class="small">{{ a.note or "" }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+<section class="card">
+  <h2>Searches ({{ run.searches|length }})</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Source</th><th>Board / query</th><th>Discipline</th><th>Access</th><th>Status</th><th>Results</th><th>Unique</th><th>New</th><th>Relevant</th><th>Verified</th><th>ms</th><th>Detail</th></tr></thead>
+    <tbody>{% for s in run.searches %}<tr>
+      <td>{{ s.source_label }}</td><td class="small">{{ s.board or s.query or "—" }}</td><td class="small">{{ taxonomy.category_label(s.category) if s.category else "all" }}</td>
+      <td class="small">{{ s.access_method }}</td><td>{{ badge(s.status, "src") }}</td><td>{{ s.results_retrieved }}</td><td>{{ s.unique_vacancies }}</td>
+      <td>{{ s.new_vacancies }}</td><td>{{ s.relevant_vacancies }}</td><td>{{ s.verified_open }}</td><td>{{ s.duration_ms }}</td>
+      <td class="small">{% if s.truncated %}truncated · {% endif %}{{ s.limitation or "" }}{% if s.error %}<div class="err">{{ s.error }}</div>{% endif %}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% from "_macros.html" import vacancy_rows %}
+{% block title %}Priority opportunities{% endblock %}
+{% block content %}
+<h1>Priority opportunities</h1>
+<p class="muted">Priority and Adjacent roles (plus relevant, not-yet-assessed roles with prescore ≥ 6), not closed. Ranked by Melbourne workability, then fit, conversion, verification, freshness and closing-date urgency.</p>
+{{ vacancy_rows(rows) }}
+{% endblock %}

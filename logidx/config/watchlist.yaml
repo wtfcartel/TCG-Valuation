@@ -1,0 +1,70 @@
+# Employer careers and recruiter watchlist.
+#
+# A board is searched only when `enabled` is true and every value under `board` is filled in.
+# Entries without identifiers still appear on the Search Coverage page as NOT SEARCHED
+# ("identifier not configured"), so nothing is silently skipped.
+#
+# IDENTIFIERS BELOW ARE INTENTIONALLY BLANK. They were not verified when this file was written
+# (the build environment had no access to the employers' career sites), and guessing them would
+# produce false "searched" claims. To fill one in, open the employer's careers page and copy:
+#
+#   workday:          board: {host: acme.wd3.myworkdayjobs.com, tenant: acme, site: AcmeCareers}
+#                     (from a URL like https://acme.wd3.myworkdayjobs.com/AcmeCareers/job/...;
+#                      tenant is usually the first label of the host)
+#                     optional: full_listing: true for small boards; search_terms: [...]
+#   smartrecruiters:  board: {company: AcmeGroup}         (jobs.smartrecruiters.com/AcmeGroup/...)
+#                     optional: country: au
+#   greenhouse:       board: {token: acme}                (boards.greenhouse.io/acme)
+#   lever:            board: {site: acme}                 (jobs.lever.co/acme)
+#   pageup:           board: {institution_id: "513"}      (careers.pageuppeople.com/513/...)
+#   bullhorn:         board: {cluster: "11", corp_token: "abc123"}
+#                     (from the agency's job-board page source: public-rest11.bullhornstaffing.com/
+#                      rest-services/abc123/...); optional job_url_template: "https://agency/jobs/{id}"
+#   rss:              board: {url: https://example.org/jobs.rss}
+#
+# Run `logidx probe` after editing to test each configured board live.
+
+boards:
+  # ---------------------------------------------------------------- executive search / recruiters
+  - {key: sigma_search, name: Sigma Search Supply Chain, ats: unknown, agency: true, target_group: executive_search,
+     board: {}, notes: "Supply chain executive search. Recall Case A advertised via LinkedIn."}
+  - {key: six_degrees, name: Six Degrees Executive, ats: bullhorn, agency: true, target_group: executive_search,
+     board: {cluster: "", corp_token: ""},
+     notes: "Recall Case B reference BH-31092 suggests Bullhorn. Corp token not yet confirmed."}
+  - {key: davidson, name: Davidson, ats: unknown, agency: true, target_group: executive_search, board: {}}
+  - {key: sharp_carter, name: Sharp & Carter, ats: unknown, agency: true, target_group: executive_search, board: {}}
+  - {key: hays, name: Hays, ats: unknown, agency: true, target_group: executive_search, board: {}}
+  - {key: randstad, name: Randstad, ats: unknown, agency: true, target_group: executive_search, board: {}}
+  - {key: michael_page, name: Michael Page, ats: unknown, agency: true, target_group: executive_search, board: {}}
+  - {key: robert_walters, name: Robert Walters, ats: unknown, agency: true, target_group: executive_search, board: {}}
+  - {key: brunel, name: Brunel, ats: unknown, agency: true, target_group: executive_search, board: {}}
+
+  # ---------------------------------------------------------------- not-for-profit boards (feeds)
+  - {key: ethicaljobs_feed, name: EthicalJobs, ats: rss, target_group: ethicaljobs, board: {url: ""},
+     notes: "Add the EthicalJobs RSS/Atom feed URL for executive roles if one is published."}
+  - {key: probono_feed, name: Pro Bono Australia, ats: rss, target_group: probono, board: {url: ""},
+     notes: "Add the Pro Bono Australia jobs feed URL if one is published."}
+
+  # ---------------------------------------------------------------- employer careers watchlist
+  - {key: trivago, name: trivago, ats: unknown, board: {}, industry: Travel technology,
+     notes: "Company careers source (not an aggregator)."}
+  - {key: toll, name: Toll Group, ats: unknown, board: {}, industry: Logistics}
+  - {key: linfox, name: Linfox, ats: unknown, board: {}, industry: Logistics}
+  - {key: qube, name: Qube Holdings, ats: unknown, board: {}, industry: Ports and logistics}
+  - {key: aurizon, name: Aurizon, ats: unknown, board: {}, industry: Rail freight}
+  - {key: pacific_national, name: Pacific National, ats: unknown, board: {}, industry: Rail freight}
+  - {key: australia_post, name: Australia Post / StarTrack, ats: unknown, board: {}, industry: Parcels and logistics}
+  - {key: dp_world, name: DP World Australia, ats: unknown, board: {}, industry: Ports}
+  - {key: patrick, name: Patrick Terminals, ats: unknown, board: {}, industry: Ports}
+  - {key: brambles, name: Brambles / CHEP, ats: unknown, board: {}, industry: Supply chain}
+  - {key: dhl_supply_chain, name: DHL Supply Chain, ats: unknown, board: {}, industry: Contract logistics}
+  - {key: kuehne_nagel, name: Kuehne+Nagel, ats: unknown, board: {}, industry: Freight forwarding}
+  - {key: ceva, name: CEVA Logistics, ats: unknown, board: {}, industry: Contract logistics}
+  - {key: americold, name: Americold, ats: unknown, board: {}, industry: Cold chain}
+  - {key: visy, name: Visy, ats: unknown, board: {}, industry: Packaging and logistics}
+  - {key: metcash, name: Metcash, ats: unknown, board: {}, industry: Wholesale distribution}
+  - {key: coles, name: Coles Group, ats: unknown, board: {}, industry: Retail supply chain}
+  - {key: woolworths, name: Woolworths Group, ats: unknown, board: {}, industry: Retail supply chain}
+  - {key: downer, name: Downer, ats: unknown, board: {}, industry: Infrastructure services}
+  - {key: ventia, name: Ventia, ats: unknown, board: {}, industry: Infrastructure services}
+  - {key: cleanaway, name: Cleanaway, ats: unknown, board: {}, industry: Industrial services}

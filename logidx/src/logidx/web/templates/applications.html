@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge %}
+{% block title %}Applications{% endblock %}
+{% block content %}
+<h1>Applications</h1>
+<p class="muted">Move a vacancy between stages from its page. Gmail correspondence matching is planned (Phase 4); nothing is sent or submitted automatically.</p>
+<div class="kanban">
+{% for status, rows in columns.items() %}
+  <section class="col">
+    <h2>{{ status.value|title }} <span class="count">{{ rows|length }}</span></h2>
+    {% for v in rows %}
+    <a class="kcard" href="/jobs/{{ v.id }}"><strong>{{ v.title }}</strong><span>{{ v.employer or v.recruiting_agency or "Confidential" }}</span>
+      <span class="small">{{ badge(v.verification_status, "ver") }}{% if v.applied_at %} applied {{ v.applied_at|local("%d %b") }}{% endif %}</span></a>
+    {% else %}<p class="muted small">None</p>{% endfor %}
+  </section>
+{% endfor %}
+</div>
+{% endblock %}
