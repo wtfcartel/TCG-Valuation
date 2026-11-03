@@ -1,0 +1,5 @@
+po_number,supplier_abn,project_id,description,amount_ex_gst,gl
+PO-3021,49 624 595 711,P-101,Synthetic turf and infill supply,280000,5100
+PO-3034,73 569 568 058,P-101,20t excavator wet hire (Oct),16000,5300
+PO-3040,31 023 281 556,P-106,Crushed rock base course,48000,5110
+PO-3052,73 628 587 013,P-102,Irrigation fittings,12500,5120

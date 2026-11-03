@@ -1,0 +1,9 @@
+asset_id,type,description,fixed_cost_per_day,fuel_per_hour,maint_per_hour,internal_charge_per_day,hours_meter,next_service_hours,service_days,status,unavailable_until
+EX20-01,excavator_20t,20t excavator (GPS),165,38,20,1150,6420,6500,1,available,
+EX08-01,excavator_8t,8t excavator,95,18,16,720,3110,3500,1,available,
+EX08-02,excavator_8t,8t excavator,95,18,16,720,5985,6000,1,available,
+GR-01,laser_grader,Laser-controlled grader,210,44,28,1450,4100,4500,1,available,
+SS-01,skid_steer,Skid steer loader,60,12,10,480,2200,2400,1,available,
+SS-02,skid_steer,Skid steer loader,60,12,10,480,1500,1750,1,breakdown,2026-11-12
+RL-12,roller_12t,12t smooth-drum roller,80,16,14,620,2860,3000,1,available,
+TT-01,tractor_topdresser,Tractor + topdresser,70,14,12,540,1980,2200,1,available,

@@ -1,0 +1,7 @@
+type,wet_hire_per_day,float_each_way
+excavator_20t,1650,450
+excavator_8t,1080,250
+laser_grader,2300,550
+skid_steer,880,150
+roller_12t,1100,350
+tractor_topdresser,950,200

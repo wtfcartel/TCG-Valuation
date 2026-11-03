@@ -1,0 +1,137 @@
+{
+  "portfolio": {
+    "projects": 6,
+    "excluded_stale": [
+      "P-103"
+    ],
+    "revised_revenue": 4827000.0,
+    "forecast_gm": 889534.1763499659,
+    "quoted_gm": 980184.7826086957,
+    "under_billed": 317850.0000000001,
+    "ageing": {
+      "0-30": 885800.0,
+      "31-60": 0.0,
+      "61-90": 180000.0,
+      "90+": 0.0
+    },
+    "counts": {
+      "RED": 3,
+      "AMBER": 5,
+      "NOT REPORTED": 1
+    },
+    "forecast_gm_pct": 0.1842830280401835,
+    "quoted_gm_pct": 0.20306293403950604
+  },
+  "exceptions": [
+    {
+      "key": "P-101|MARGIN_FADE",
+      "severity": "RED",
+      "finding": "Forecast margin 13.2% vs 20.0% quoted (6.8 pts fade; CPI 0.92)",
+      "owner": "Sam Ortiz (PM)",
+      "escalate_to": "Business Operations Director",
+      "due": "2026-11-03"
+    },
+    {
+      "key": "P-102|UNDER_BILLED",
+      "severity": "RED",
+      "finding": "$233,600 of work completed but not invoiced (31% of earned revenue)",
+      "owner": "Priya Nair (PM)",
+      "escalate_to": "Jo Park (Accounts Lead)",
+      "due": "2026-11-04"
+    },
+    {
+      "key": "P-101|SCHEDULE_SLIP",
+      "severity": "RED",
+      "finding": "Forecast finish 2027-01-22 is 35 days after plan",
+      "owner": "Sam Ortiz (PM)",
+      "escalate_to": "Business Operations Director",
+      "due": "2026-11-06"
+    },
+    {
+      "key": "P-103|COST_DATA_STALE",
+      "severity": "NOT REPORTED",
+      "finding": "Costs last updated 29 days ago; margin and cost forecasts suppressed until updated",
+      "owner": "Tom Becker (PM)",
+      "escalate_to": "Business Operations Director",
+      "due": "2026-11-03"
+    },
+    {
+      "key": "P-101|PENDING_VARIATION",
+      "severity": "AMBER",
+      "finding": "V-101-2 \"Unsuitable subgrade removal and replacement\": $68,000 cost incurred, $85,000 claim unapproved for 27 days",
+      "owner": "Ravi Menon (Commercial Manager)",
+      "escalate_to": "Sam Ortiz (PM)",
+      "due": "2026-11-04"
+    },
+    {
+      "key": "P-102|DEBTOR_OVERDUE",
+      "severity": "AMBER",
+      "finding": "INV-5524 $180,000 unpaid, 78 days since issue",
+      "owner": "Jo Park (Accounts Lead)",
+      "escalate_to": "Priya Nair (PM)",
+      "due": "2026-11-04"
+    },
+    {
+      "key": "P-101|OVERCOMMITTED",
+      "severity": "AMBER",
+      "finding": "Plant hire: spent + committed $130,000 vs budget $90,000 (+44%)",
+      "owner": "Sam Ortiz (PM)",
+      "escalate_to": "Ravi Menon (Commercial Manager)",
+      "due": "2026-11-06"
+    },
+    {
+      "key": "P-105|MARGIN_FADE",
+      "severity": "AMBER",
+      "finding": "Forecast margin 20.3% vs 23.9% quoted (3.6 pts fade; CPI 0.95)",
+      "owner": "Lena Wu (PM)",
+      "escalate_to": null,
+      "due": "2026-11-06"
+    },
+    {
+      "key": "P-106|OVERCOMMITTED",
+      "severity": "AMBER",
+      "finding": "Materials: spent + committed $580,000 vs budget $470,000 (+23%)",
+      "owner": "Tom Becker (PM)",
+      "escalate_to": "Ravi Menon (Commercial Manager)",
+      "due": "2026-11-06"
+    }
+  ],
+  "p101_history": [
+    {
+      "month_end": "2026-07-31",
+      "pct_complete": 0.08,
+      "cpi": 1.011965811965812,
+      "forecast_margin": 0.20945945945945946,
+      "fade": -0.009459459459459446,
+      "budget_remaining_share": 0.9209459459459459,
+      "flag": "GREEN"
+    },
+    {
+      "month_end": "2026-08-31",
+      "pct_complete": 0.2,
+      "cpi": 0.9850552306692657,
+      "forecast_margin": 0.18786279683377308,
+      "fade": 0.012137203166226934,
+      "budget_remaining_share": 0.7969656992084433,
+      "flag": "GREEN"
+    },
+    {
+      "month_end": "2026-09-30",
+      "pct_complete": 0.38,
+      "cpi": 0.95,
+      "forecast_margin": 0.15789473684210525,
+      "fade": 0.04210526315789476,
+      "budget_remaining_share": 0.6,
+      "flag": "AMBER"
+    },
+    {
+      "month_end": "2026-10-31",
+      "pct_complete": 0.55,
+      "cpi": 0.9213259668508289,
+      "forecast_margin": 0.13168625569680995,
+      "fade": 0.06831374430319007,
+      "budget_remaining_share": 0.4030343007915567,
+      "flag": "RED"
+    }
+  ]
+}

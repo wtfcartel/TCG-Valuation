@@ -1,0 +1,6 @@
+setting,value,meaning
+gl_confidence_auto,0.75,GL suggestions at or above this confidence go straight to the review export
+po_tolerance,0.05,Invoice may exceed its PO by this share before approval is required
+gst_rate,0.10,Australian GST
+gst_tolerance,0.05,Dollar rounding tolerance on GST
+director_threshold,25000,Approvals above this ex-GST value are copied to the Business Operations Director

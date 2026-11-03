@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Power BI Data Feeds</title><style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#1d2a22;--muted:#5d6b62;--line:#dfe3dc;--green:#2f6b3f;--green-l:#e3efe5;
+--amber:#a5640c;--amber-l:#fbefd9;--red:#a8322d;--red-l:#f8e1df;--grey-l:#eceeea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 48px}
+header h1{font-size:22px;margin:0 0 2px}header p{margin:0;color:var(--muted)}
+.banner{background:#fff4c7;border:1px solid #e6cf70;border-radius:6px;padding:8px 12px;margin:14px 0 18px;font-size:12.5px}
+.grid{display:grid;gap:12px}.k4{grid-template-columns:repeat(4,1fr)}.k3{grid-template-columns:repeat(3,1fr)}.k2{grid-template-columns:1fr 1fr}
+@media(max-width:800px){.k4,.k3,.k2{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.kpi .v{font-size:24px;font-weight:650;margin-top:2px}
+.kpi .s{font-size:12px;color:var(--muted)}
+h2{font-size:16px;margin:26px 0 8px}h3{font-size:14px;margin:0 0 8px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#eef1ec;font-weight:600;font-size:12px;color:#33433a}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.RED{background:var(--red-l);color:var(--red)}.AMBER{background:var(--amber-l);color:var(--amber)}.GREEN{background:var(--green-l);color:var(--green)}
+.GREY{background:var(--grey-l);color:#555}
+.note{color:var(--muted);font-size:12.5px}.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+footer{margin-top:28px;color:var(--muted);font-size:12px}
+</style></head>
+<body><div class="wrap"><nav style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px;font-size:13px">
+<a href="/" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Overview</a>
+<a href="/reader.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Invoice reader — try it</a>
+<a href="/invoice-reader-batch.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Batch results</a>
+<a href="/project-control.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Margin early-warning</a>
+<a href="/plant-allocation.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Plant allocation</a>
+<a href="/power-bi.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Power BI feeds</a>
+</nav><header><h1>Power BI Data Feeds</h1><p>Live tables for Power BI Desktop, the Power BI service or Excel</p></header>
+<div class="banner"><b>Prototype.</b> SYNTHETIC DEMONSTRATION DATA — every project, person, client and figure is invented to test the calculations. Nothing here describes Green Turf&#x27;s actual performance.</div><h2>Connect Power BI Desktop (free) or Excel</h2><ol>
+<li>Power BI Desktop → <b>Get data → Web</b> (Excel: <b>Data → From Web</b>).</li>
+<li>Paste a feed URL, e.g. <code class="mono" id="example"></code></li>
+<li>Choose <b>Anonymous</b> access, then <b>Load</b>. Repeat for each table and relate them on <span class="mono">project_id</span>.</li>
+<li><b>Refresh</b> re-runs the calculations on the server, so a change to the source data flows straight into the report.</li></ol>
+<h2>Feeds</h2><table><tr><th>Table</th><th>Contents</th><th>Download</th></tr><tr><td class='mono'>projects</td><td>One row per project: contract value, % complete, CPI, forecast cost and margin, fade, unbilled work, slip</td><td><a href='/api/powerbi?table=projects&format=csv'>CSV</a> · <a href='/api/powerbi?table=projects&format=json'>JSON</a></td></tr><tr><td class='mono'>exceptions</td><td>Exceptions register: severity, finding, owner, escalation, due date, status</td><td><a href='/api/powerbi?table=exceptions&format=csv'>CSV</a> · <a href='/api/powerbi?table=exceptions&format=json'>JSON</a></td></tr><tr><td class='mono'>margin_history</td><td>Monthly forecast margin for the early-warning example project</td><td><a href='/api/powerbi?table=margin_history&format=csv'>CSV</a> · <a href='/api/powerbi?table=margin_history&format=json'>JSON</a></td></tr><tr><td class='mono'>debtor_ageing</td><td>Unpaid invoices by age bucket</td><td><a href='/api/powerbi?table=debtor_ageing&format=csv'>CSV</a> · <a href='/api/powerbi?table=debtor_ageing&format=json'>JSON</a></td></tr><tr><td class='mono'>ap_queue</td><td>Last reader batch: status, supplier, totals, suggested GL and confidence, issues</td><td><a href='/api/powerbi?table=ap_queue&format=csv'>CSV</a> · <a href='/api/powerbi?table=ap_queue&format=json'>JSON</a></td></tr><tr><td class='mono'>plant_plan</td><td>Next week's allocation: owned vs hire, cost and hire alternative</td><td><a href='/api/powerbi?table=plant_plan&format=csv'>CSV</a> · <a href='/api/powerbi?table=plant_plan&format=json'>JSON</a></td></tr><tr><td class='mono'>plant_fleet</td><td>8-week utilisation, breakdowns, contribution by machine</td><td><a href='/api/powerbi?table=plant_fleet&format=csv'>CSV</a> · <a href='/api/powerbi?table=plant_fleet&format=json'>JSON</a></td></tr><tr><td class='mono'>plant_actions</td><td>Compliance and fleet actions with owners</td><td><a href='/api/powerbi?table=plant_actions&format=csv'>CSV</a> · <a href='/api/powerbi?table=plant_actions&format=json'>JSON</a></td></tr></table>
+<h2>Next step: embedding a Power BI report here</h2><p style="max-width:760px">The same feeds can sit behind a Power BI report
+embedded in this site with Microsoft's <span class="mono">powerbi-client-react</span>. Embedding for viewers who don't sign
+in needs Power BI Embedded or Fabric capacity; embedding for signed-in staff uses their Power BI licences. Which route fits
+depends on the business's Microsoft 365 licensing, so I would confirm that before choosing.</p>
+<p class="note">Feeds are public and contain synthetic data only. Real data would sit behind authentication.</p>
+<script>document.getElementById('example').textContent = location.origin + '/api/powerbi?table=projects&format=csv';</script>
+<footer>Generated by greenturf-modernisation-showcase · reporting date 31 Oct 2026 · recalculates from the CSV files in /data on every run.</footer>
+</div></body></html>

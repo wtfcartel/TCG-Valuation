@@ -1,0 +1,14 @@
+operator_id,competency,expires
+OP-01,excavator,2026-10-28
+OP-01,roller,2027-05-01
+OP-02,excavator,2027-08-15
+OP-02,skid_steer,2027-08-15
+OP-03,excavator,2027-03-02
+OP-03,laser_grader,2026-11-24
+OP-04,excavator,2027-06-30
+OP-04,skid_steer,2027-06-30
+OP-05,skid_steer,2027-01-20
+OP-05,roller,2027-01-20
+OP-05,tractor_topdresser,2027-04-11
+OP-06,skid_steer,2027-09-09
+OP-06,roller,2027-09-09

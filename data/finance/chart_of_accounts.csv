@@ -1,0 +1,11 @@
+code,name,keywords
+1200,Accounts Receivable,remittance|payment advice|eft|paid
+5100,Materials - Turf & Infill,synthetic turf|turf|infill|shockpad|carpet|rubber crumb
+5110,Materials - Aggregates & Base,crushed rock|aggregate|road base|gravel|cracker dust|screenings|tonne
+5120,Materials - Irrigation & Drainage,irrigation|sprinkler|solenoid|valve|lateral|pipe|drainage|ag pipe
+5300,Plant - External Hire,hire|wet hire|dry hire|float|excavator hire|operator hire
+5410,Plant - Fuel & Oil,diesel|fuel|adblue|unleaded|litre|oil
+5420,Plant - Repairs & Maintenance,hydraulic|repair|hose|seal|pump|service|workshop|filter
+5500,Subcontractors,subcontract|line marking|labour hire
+5600,Project - Site Investigation,geotechnical|geotech|site investigation|subgrade|testing|borehole
+6200,Professional Fees,consulting|advisory|assessment|report|professional services

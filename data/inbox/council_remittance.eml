@@ -1,0 +1,20 @@
+From: payments@democouncil.example
+To: accounts@greenturf-demo.example
+Subject: Remittance advice EFT-2026-10-31-114
+Date: Sat, 31 Oct 2026 09:12:00 +1100
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Remittance Advice
+
+Payer: Demo Council
+Payment Reference: EFT-2026-10-31-114
+Payment Date: 31/10/2026
+
+Invoices paid:
+  Invoice INV-5530    $500,000.00
+
+Total Paid: $500,000.00
+
+(Synthetic sample - fictional organisation.)

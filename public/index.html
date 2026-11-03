@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Business Modernisation Prototypes</title><style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#1d2a22;--muted:#5d6b62;--line:#dfe3dc;--green:#2f6b3f;--green-l:#e3efe5;
+--amber:#a5640c;--amber-l:#fbefd9;--red:#a8322d;--red-l:#f8e1df;--grey-l:#eceeea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 48px}
+header h1{font-size:22px;margin:0 0 2px}header p{margin:0;color:var(--muted)}
+.banner{background:#fff4c7;border:1px solid #e6cf70;border-radius:6px;padding:8px 12px;margin:14px 0 18px;font-size:12.5px}
+.grid{display:grid;gap:12px}.k4{grid-template-columns:repeat(4,1fr)}.k3{grid-template-columns:repeat(3,1fr)}.k2{grid-template-columns:1fr 1fr}
+@media(max-width:800px){.k4,.k3,.k2{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.kpi .v{font-size:24px;font-weight:650;margin-top:2px}
+.kpi .s{font-size:12px;color:var(--muted)}
+h2{font-size:16px;margin:26px 0 8px}h3{font-size:14px;margin:0 0 8px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#eef1ec;font-weight:600;font-size:12px;color:#33433a}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.RED{background:var(--red-l);color:var(--red)}.AMBER{background:var(--amber-l);color:var(--amber)}.GREEN{background:var(--green-l);color:var(--green)}
+.GREY{background:var(--grey-l);color:#555}
+.note{color:var(--muted);font-size:12.5px}.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+footer{margin-top:28px;color:var(--muted);font-size:12px}
+</style></head>
+<body><div class="wrap"><nav style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px;font-size:13px">
+<a href="/" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Overview</a>
+<a href="/reader.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Invoice reader — try it</a>
+<a href="/invoice-reader-batch.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Batch results</a>
+<a href="/project-control.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Margin early-warning</a>
+<a href="/plant-allocation.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Plant allocation</a>
+<a href="/power-bi.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Power BI feeds</a>
+</nav><header><h1>Business Modernisation Prototypes</h1><p>James Fischer-Myall · LogisticsDx</p></header>
+<div class="banner"><b>Prototype.</b> SYNTHETIC DEMONSTRATION DATA — every project, person, client and figure is invented to test the calculations. Nothing here describes Green Turf&#x27;s actual performance.</div><div class='grid k2'><a class='card' href='/reader.html' style='text-decoration:none;color:inherit'><h3>Invoice & remittance reader — try it live →</h3><p class='note' style='margin:0'>Pick a sample scan or upload an image. The reader extracts the fields, validates ABN, GST, PO and duplicates, suggests the GL account, and drafts an approval email when it isn't sure.</p></a><a class='card' href='/invoice-reader-batch.html' style='text-decoration:none;color:inherit'><h3>Reader batch results →</h3><p class='note' style='margin:0'>Ten emailed and scanned documents: 5 ready, 3 approval emails drafted, 2 held ($23,003).</p></a><a class='card' href='/project-control.html' style='text-decoration:none;color:inherit'><h3>Project margin early-warning →</h3><p class='note' style='margin:0'>Forecast margin at completion, exceptions with owners and due dates, tamper-evident action trail.</p></a><a class='card' href='/plant-allocation.html' style='text-decoration:none;color:inherit'><h3>Plant & operator allocation →</h3><p class='note' style='margin:0'>Lowest-cost weekly plan across owned fleet and hire, gated by tickets, inductions and service windows.</p></a><a class='card' href='/power-bi.html' style='text-decoration:none;color:inherit'><h3>Power BI data feeds →</h3><p class='note' style='margin:0'>Live CSV/JSON feeds for Power BI Desktop or Excel (Get Data → Web). Recalculated on every refresh.</p></a></div><h2>What this is</h2><p style="max-width:760px">Working prototypes prepared for a Business Operations Director
+interview. They show how targeted automation could give management better visibility, remove repetitive work and
+improve the speed and quality of decisions. They are demonstrations on invented data, not implemented systems, and they
+make no claim about any company's current performance.</p>
+<footer>Generated by greenturf-modernisation-showcase · reporting date 31 Oct 2026 · recalculates from the CSV files in /data on every run.</footer>
+</div></body></html>

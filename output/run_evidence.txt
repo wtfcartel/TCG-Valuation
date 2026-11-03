@@ -1,0 +1,7 @@
+Wrote 10 documents to /home/claude/greenturf-modernisation-showcase/data/inbox
+Demo 3: 10 documents → {'READY': 5, 'NEEDS APPROVAL': 3, 'EXCEPTION': 2}; 9 Xero lines; 5 email drafts; 18.6s
+Demo 1: 6 projects, 9 exceptions ({'RED': 3, 'AMBER': 5, 'NOT REPORTED': 1}); forecast GM 18.4% vs quoted 20.3%; action log 11 entries, chain ok=True
+Demo 2: plan $29,480 vs all-hire $41,900; 5/7 owned; 6 actions
+................                                                         [100%]
+16 passed in 19.03s
+Screenshots written to /home/claude/greenturf-modernisation-showcase/screenshots

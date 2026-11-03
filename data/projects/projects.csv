@@ -1,0 +1,7 @@
+project_id,name,client_type,scope,project_manager,start,planned_finish,forecast_finish,quoted_revenue,quoted_cost,pct_complete,cost_updated
+P-101,Northfield Reserve pitch,Council,Synthetic soccer pitch incl. base and drainage,Sam Ortiz,2026-07-06,2026-12-18,2027-01-22,1850000,1480000,0.55,2026-10-30
+P-102,Eastvale College oval,School,Cricket oval reconstruction and irrigation,Priya Nair,2026-06-15,2026-11-27,2026-11-27,920000,745000,0.80,2026-10-29
+P-103,Riverbend estate earthworks,Developer,Bulk earthworks and drainage subcontract,Tom Becker,2026-09-01,2027-02-26,2027-02-26,640000,560000,0.30,2026-10-02
+P-104,Kingsford Park AFL oval,Council,Irrigation upgrade and turf renovation,Priya Nair,2026-08-03,2026-11-13,2026-11-13,480000,372000,0.95,2026-10-30
+P-105,Multi-site sportsfield maintenance,Council,Annual maintenance contract (12 sites),Lena Wu,2026-01-05,2026-12-18,2026-12-18,310000,236000,0.70,2026-10-31
+P-106,Westmead hockey centre,Club,Hockey pitch resurface,Tom Becker,2026-10-05,2027-03-19,2027-03-19,1200000,960000,0.10,2026-10-30

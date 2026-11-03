@@ -1,0 +1,5 @@
+variation_id,project_id,description,status,revenue,cost,raised,decided,work_performed
+V-101-1,P-101,Additional spectator path,approved,45000,36000,2026-08-04,2026-08-21,yes
+V-101-2,P-101,Unsuitable subgrade removal and replacement,pending,85000,68000,2026-10-04,,yes
+V-102-1,P-102,Extra irrigation zone,approved,22000,17000,2026-07-20,2026-07-30,yes
+V-106-1,P-106,Additional goal-circle line marking,pending,12000,9000,2026-10-25,,no

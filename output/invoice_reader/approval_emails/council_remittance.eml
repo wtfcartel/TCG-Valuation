@@ -1,0 +1,29 @@
+From: ap-automation@greenturf-demo.example
+To: Jo Park <accounts.lead@greenturf-demo.example>
+Cc: Sam Ortiz <pm.p101@greenturf-demo.example>
+Date: Tue, 03 Nov 2026 13:29:33 +1100
+X-Draft-Status: DRAFT - NOT SENT (demonstration)
+Subject: [Query] Short payment from Demo Council - EFT-2026-10-31-114
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Hi Jo,
+
+A customer remittance has been received but does not clear the invoice in ful=
+l.
+
+Payer: Demo Council
+Payment reference: EFT-2026-10-31-114
+Payment date: 31/10/2026
+
+  INV-5530 (P-101): outstanding $560,000.00, paid $500,000.00, difference $-6=
+0,000.00
+
+Please confirm how to treat the difference:
+  Reply ALLOCATE-PART to allocate the payment and leave the balance open, or
+  Reply QUERY to hold allocation while the customer is contacted.
+
+This message was drafted automatically by the AP reader and has not been sent.
+
+(Synthetic demonstration data.)

@@ -1,10 +1,4 @@
-node_modules/
-dist/
-coverage/
-.env
-*.log
-data/
-apps/api/storage/
-test-results/
-playwright-report/
+__pycache__/
+*.pyc
+.pytest_cache/
 .vercel/

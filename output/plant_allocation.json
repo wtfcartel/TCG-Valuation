@@ -1,0 +1,190 @@
+{
+  "plan": [
+    {
+      "request": "R1",
+      "kind": "HIRE",
+      "asset": null,
+      "operator": null,
+      "service_on": null,
+      "cost": 10480.0
+    },
+    {
+      "request": "R2",
+      "kind": "OWNED",
+      "asset": "EX08-01",
+      "operator": "OP-02",
+      "service_on": null,
+      "cost": 3216.0
+    },
+    {
+      "request": "R3",
+      "kind": "OWNED",
+      "asset": "EX08-02",
+      "operator": "OP-04",
+      "service_on": "2026-11-09",
+      "cost": 2352.0
+    },
+    {
+      "request": "R4",
+      "kind": "OWNED",
+      "asset": "GR-01",
+      "operator": "OP-03",
+      "service_on": null,
+      "cost": 3432.0
+    },
+    {
+      "request": "R5",
+      "kind": "OWNED",
+      "asset": "SS-01",
+      "operator": "OP-06",
+      "service_on": null,
+      "cost": 3460.0
+    },
+    {
+      "request": "R6",
+      "kind": "HIRE",
+      "asset": null,
+      "operator": null,
+      "service_on": null,
+      "cost": 5060.0
+    },
+    {
+      "request": "R7",
+      "kind": "OWNED",
+      "asset": "RL-12",
+      "operator": "OP-05",
+      "service_on": null,
+      "cost": 1480.0
+    }
+  ],
+  "total": 29480.0,
+  "all_hire": 41900.0,
+  "actions": [
+    {
+      "severity": "RED",
+      "item": "Mark Delaney \u2014 excavator ticket expired 28 Oct",
+      "owner": "Plant & Compliance Coordinator",
+      "due": "this week"
+    },
+    {
+      "severity": "AMBER",
+      "item": "Ben Kowalski \u2014 laser_grader ticket expires 24 Nov \u2014 only current holder of this ticket",
+      "owner": "Plant & Compliance Coordinator",
+      "due": "before 24 Nov"
+    },
+    {
+      "severity": "AMBER",
+      "item": "EX08-02 \u2014 book service Mon 09 Nov before R3",
+      "owner": "Workshop Supervisor",
+      "due": "09 Nov"
+    },
+    {
+      "severity": "AMBER",
+      "item": "EX20-01 \u2014 4 breakdown days in 8 weeks; review reliability",
+      "owner": "Workshop Supervisor",
+      "due": "2 weeks"
+    },
+    {
+      "severity": "AMBER",
+      "item": "SS-02 \u2014 5 breakdown days in 8 weeks; review reliability",
+      "owner": "Workshop Supervisor",
+      "due": "2 weeks"
+    },
+    {
+      "severity": "REVIEW",
+      "item": "TT-01 \u2014 22% utilised over 8 weeks; assess with 12 months of seasonal data before any hire-vs-own decision",
+      "owner": "Business Operations Director",
+      "due": "90-day review"
+    }
+  ],
+  "fleet": [
+    {
+      "asset_id": "EX20-01",
+      "description": "20t excavator (GPS)",
+      "utilisation": 0.6,
+      "breakdown_days": 4,
+      "internal_charge": 27600.0,
+      "fixed_cost": 6600.0,
+      "running_cost": 10788.0,
+      "contribution": 10212.0,
+      "hours_to_service": 80.0
+    },
+    {
+      "asset_id": "EX08-01",
+      "description": "8t excavator",
+      "utilisation": 0.825,
+      "breakdown_days": 0,
+      "internal_charge": 23760.0,
+      "fixed_cost": 3800.0,
+      "running_cost": 7276.0,
+      "contribution": 12684.0,
+      "hours_to_service": 390.0
+    },
+    {
+      "asset_id": "EX08-02",
+      "description": "8t excavator",
+      "utilisation": 0.75,
+      "breakdown_days": 2,
+      "internal_charge": 21600.0,
+      "fixed_cost": 3800.0,
+      "running_cost": 6834.0,
+      "contribution": 10966.0,
+      "hours_to_service": 15.0
+    },
+    {
+      "asset_id": "GR-01",
+      "description": "Laser-controlled grader",
+      "utilisation": 0.525,
+      "breakdown_days": 0,
+      "internal_charge": 30450.0,
+      "fixed_cost": 8400.0,
+      "running_cost": 11376.0,
+      "contribution": 10674.0,
+      "hours_to_service": 400.0
+    },
+    {
+      "asset_id": "SS-01",
+      "description": "Skid steer loader",
+      "utilisation": 0.875,
+      "breakdown_days": 0,
+      "internal_charge": 16800.0,
+      "fixed_cost": 2400.0,
+      "running_cost": 4884.0,
+      "contribution": 9516.0,
+      "hours_to_service": 200.0
+    },
+    {
+      "asset_id": "SS-02",
+      "description": "Skid steer loader",
+      "utilisation": 0.65,
+      "breakdown_days": 5,
+      "internal_charge": 12480.0,
+      "fixed_cost": 2400.0,
+      "running_cost": 3740.0,
+      "contribution": 6340.0,
+      "hours_to_service": 250.0
+    },
+    {
+      "asset_id": "RL-12",
+      "description": "12t smooth-drum roller",
+      "utilisation": 0.45,
+      "breakdown_days": 0,
+      "internal_charge": 11160.0,
+      "fixed_cost": 3200.0,
+      "running_cost": 2880.0,
+      "contribution": 5080.0,
+      "hours_to_service": 140.0
+    },
+    {
+      "asset_id": "TT-01",
+      "description": "Tractor + topdresser",
+      "utilisation": 0.225,
+      "breakdown_days": 0,
+      "internal_charge": 4860.0,
+      "fixed_cost": 2800.0,
+      "running_cost": 1508.0,
+      "contribution": 552.0,
+      "hours_to_service": 220.0
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+supplier_abn,invoice_number,invoice_date,po_number,subtotal,total,status
+73 569 568 058,BPH-4410,2026-10-17,PO-3034,8950.00,9845.00,POSTED
+49 624 595 711,PSS-20871,2026-09-29,PO-3021,89200.00,98120.00,POSTED

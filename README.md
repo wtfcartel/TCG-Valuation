@@ -1,74 +1,94 @@
-# Cardcore — TCG Collection Valuation & Insurance Ledger
+# Green Turf modernisation showcase
 
-Cardcore is a live **asset register and valuation ledger** for trading-card collectors (Pokémon, One Piece, MTG, Yu-Gi-Oh! and more). It combines collection tracking, a documented **Comparable Sales Method**, and an **insurance schedule** that records every change in declared value as an immutable, hash-chained adjustment event.
+Interview demonstration material for the Business Operations Director role. It is kept separate from the
+production applications in `wtfcartel/Trial-1-Cartel-v1` and `wtfcartel/TCG-Valuation`, and none of them was modified.
 
-> Phase 1 MVP. No payments, underwriting or premium calculation. Cardcore reports value changes; insurers decide what they mean for cover.
+> **All data is synthetic.** Every supplier, ABN, project, person, rate and figure is invented to exercise the
+> calculations. Nothing here connects to, or describes, Green Turf's systems or performance. Nothing is posted to
+> Xero and no email is sent.
 
-## Documents
+## Contents
 
-| | |
+| Path | What it is |
 |---|---|
-| [01 — Reference project review & build-vs-fork recommendation](docs/01-reference-review.md) | The Tin, PokéCollector, CardScope, Pokémon Card Tracking |
-| [02 — Architecture, database schema, API](docs/02-architecture.md) | Three separated layers; append-only invariants; endpoint map |
-| [03 — Licensing & IP risk register](docs/03-licensing-and-ip.md) | AGPL, game IP, market-data rights, professional representation |
-| [04 — Data sources](docs/04-data-sources.md) | Which valuation sources are accessible and legally reusable |
-| [05 — Deploying to Vercel](docs/05-deploy-vercel.md) | Neon Postgres, private Blob photos, daily cron, plan limits |
-| [Methodology CSM-1.0.0](docs/methodology/CSM-1.0.0.md) · [CSM-1.1.0](docs/methodology/CSM-1.1.0.md) | The valuation rules the engine implements (1.1.0 adds cross-source de-duplication) |
+| `01-capability-audit.md` | Deliverable 1: what exists in the GitHub repositories, what was tested, and what is reusable |
+| `demo3_invoice_reader/` | **Flagship.** OCR invoice and remittance reader: validation, GL suggestion, approval-email drafts, Xero-format export |
+| `demo1_project_control/` | Project margin early-warning: forecast margin at completion, exceptions with owners, hash-chained action trail |
+| `demo2_plant_allocation/` | Plant and operator allocation: lowest-cost weekly plan gated by tickets, inductions and service windows |
+| `data/` | Synthetic inputs (CSV) and the generated inbox of scanned and emailed documents |
+| `output/` | Generated pages, workbook, Xero CSV, draft emails, JSON, test results and run log |
+| `screenshots/` | Captured pages, plus cropped versions used in the executive pack |
+| `tests/test_demos.py` | 17 tests covering the calculations and controls |
+| `api/`, `public/`, `webbuild/`, `vercel.json` | The Vercel deployment: Python functions, static site, and its build script |
 
-## Repository layout
+The executive pack (Deliverable 3) and the presentation notes and implementation assessment (Deliverables 4 and 5,
+plus the wider streamlining options) are Claude Docs, linked from the conversation.
 
-```
-packages/engine   Pure valuation engine (comparable selection, stats, escalation, confidence) + unit tests
-apps/api          Fastify API, PostgreSQL migrations, pricing-source adapters, insurance ledger, reports, PDF
-apps/web          React PWA (dashboard, add asset, valuation/evidence, insurance, reports)
-docs/             Analysis, design and methodology
-```
+## Live deployment (Vercel)
 
-## Phase 1 scope delivered
+`public/` is the static site and `api/*.py` are standard-library Python functions, so Vercel needs no build or install
+step (`vercel.json`). Pages:
 
-User accounts · catalogue search/create (plus TCGdex import) · add physical card or sealed product · grade/condition · purchase info · import comparable-sale evidence (adapter, manual, CSV) · three-sale mean/median with dispersion warning and escalation · documented exclusions and overrides · collection totals and breakdowns · mark sold / lost · automatic portfolio and insurance updates · point-in-time history · valuation PDF · insurance adjustment report (JSON + PDF).
+| Path | What it does |
+|---|---|
+| `/reader.html` | Live reader: pick a sample scan or upload an image; OCR runs in the browser (tesseract.js, 3 layout passes), then `/api/read` validates, suggests the GL and drafts the approval email |
+| `/api/read` | `POST {text, filename?, ocrConfidence?}` → extracted fields, checks, GL candidates, routing, draft email |
+| `/api/powerbi?table=…&format=csv\|json` | Live tables for Power BI Desktop / Excel (Get Data → Web): projects, exceptions, margin_history, debtor_ageing, ap_queue, plant_plan, plant_fleet, plant_actions |
+| `/power-bi.html` | How to connect Power BI, and the embedding options |
 
-## Run locally
+Rebuild the site after changing data: `./run_all.sh && python3 -m webbuild.build_site`, then commit and push.
 
-Requirements: Node 22+, PostgreSQL 14+.
+## Setup
 
-```bash
-npm install
-cp .env.example .env            # adjust DATABASE_URL / JWT_SECRET
-createdb cardcore               # or use docker compose below
-npm run migrate
-npm run seed                    # optional demo data: demo@cardcore.local / cardcore-demo-password
-npm run dev:api                 # http://localhost:8080
-# register your account in the app, then make it an admin (operator-only, run on the server):
-npm run create-admin -w @cardcore/api -- you@example.com
-npm run dev:web                 # http://localhost:5173 (proxies /api)
-```
-
-Tests (the API suite needs a disposable PostgreSQL database; it **drops and recreates** the `public` schema):
+Requires Python 3.10+ and the Tesseract OCR engine.
 
 ```bash
-TEST_DATABASE_URL=postgres://cardcore:cardcore@localhost:5432/cardcore_test npm test
-npm run typecheck
+# macOS:        brew install tesseract poppler
+# Ubuntu:       sudo apt install tesseract-ocr poppler-utils
+pip install pdfplumber pytesseract pillow reportlab openpyxl pytest
+pip install playwright && playwright install chromium     # optional, for screenshots only
+
+./run_all.sh
 ```
 
-### Vercel
-
-See [docs/05-deploy-vercel.md](docs/05-deploy-vercel.md). Note that Vercel's free Hobby plan is for non-commercial use only.
-
-### Docker
+Or run each part on its own from this folder:
 
 ```bash
-JWT_SECRET=$(openssl rand -hex 32) docker compose up --build
-# app on http://localhost:8080 — serves the PWA and the API; migrations run on start
+python3 -m demo3_invoice_reader.make_samples   # regenerate the synthetic inbox
+python3 -m demo3_invoice_reader.run            # → output/invoice_reader/
+python3 -m demo1_project_control.run           # → output/project_control.html
+python3 -m demo2_plant_allocation.run          # → output/plant_allocation.html
+python3 -m pytest -q tests
 ```
 
-`ENABLE_DEMO_SOURCE` defaults to `false` in production. The synthetic demo evidence source is for development only.
+Open the `.html` files in `output/` in any browser. Change any CSV in `data/` and rerun: every figure recalculates.
 
-## Design principles
+## Evidence of execution (3 Nov 2026)
 
-1. **Market data, valuation engine and insurance ledger are separate** (tables, code and calculations).
-2. **Append-only.** Ledger, evidence, valuations, insurance events, reports and audit rows cannot be updated or deleted; database triggers enforce this.
-3. **Asking prices are never evidence.** Every observation is typed; rejected evidence is stored with its reason.
-4. **No fake precision.** Confidence is High / Moderate / Limited, derived by published rules from stored factors.
-5. **Adapters, not dependencies.** Each pricing source implements `SourceAdapter`; unlicensed sources are registered but fail closed.
-6. **Methodology validation ≠ valuation responsibility.** Reports always make this distinction explicit.
+```
+Demo 3: 10 documents → READY 5, NEEDS APPROVAL 3, EXCEPTION 2; 9 Xero lines; 5 email drafts; 18.6s
+Demo 1: 6 projects, 9 exceptions (RED 3, AMBER 5, NOT REPORTED 1); forecast GM 18.4% vs quoted 20.3%; action log chain ok
+Demo 2: plan $29,480 vs all-hire $41,900; 5/7 owned; 6 actions
+17 passed
+```
+
+Full log: `output/run_evidence.txt`.
+
+## What was reused from existing code
+
+| Pattern | Source | Used in |
+|---|---|---|
+| Credential-and-induction gate, enforced server-side | `Trial-1-Cartel-v1` · `lib/nurse-status.ts`, `lib/actions/shifts.ts` | Demo 2 operator eligibility |
+| Missing data reported as NOT SEARCHED, never as "nothing found" | `TCG-Valuation/logidx` · `coverage.py` | Demo 1 "not reported" projects |
+| Hash-chained, append-only event ledger | `TCG-Valuation` · `apps/api/src/services/insurance.ts` | Demo 1 action trail |
+| One data file feeding every report view; evidence-confidence labels | `Trial-1-Cartel-v1` · `lib/logistics/types.ts` | Demo 3 GL confidence and reasons |
+
+These are reused as design patterns re-implemented in Python, not as imported code: the originals are TypeScript
+and Python applications with different stacks and domains.
+
+## Known limits
+
+- OCR was tested on deliberately degraded synthetic scans. Accuracy on real supplier layouts must be measured.
+- Xero output follows the bill-import column layout. It has not been imported into a live Xero organisation.
+- The plant optimiser is an exhaustive search: suitable for tens of weekly requests, not hundreds.
+- Thresholds, the chart of accounts and cost rates are placeholders to be agreed with management.

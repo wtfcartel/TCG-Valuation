@@ -1,0 +1,842 @@
+[
+  {
+    "document": "bayside_BPH-4410.eml",
+    "method": "Email attachment \u00b7 PDF text layer",
+    "ocr_confidence": null,
+    "consensus": {},
+    "status": "EXCEPTION",
+    "fields": {
+      "kind": "invoice",
+      "supplier_text": "Bayside Plant Hire",
+      "abn": "73 569 568 058",
+      "invoice_number": "BPH-4410",
+      "invoice_date": "2026-10-17",
+      "due_date": "2026-11-16",
+      "po_number": "PO-3034",
+      "reference": "None",
+      "lines": "[{'description': '20t excavator wet hire incl. operator', 'amount': 8250.0}, {'description': 'Float delivery and collection', 'amount': 800.0}]",
+      "subtotal": "9050.0",
+      "gst": "905.0",
+      "total": "9955.0",
+      "asset_tags": "[]",
+      "paid": "[]"
+    },
+    "checks": [
+      {
+        "name": "ABN checksum",
+        "ok": true,
+        "detail": "73 569 568 058",
+        "blocking": null
+      },
+      {
+        "name": "Known supplier",
+        "ok": true,
+        "detail": "Bayside Plant Hire",
+        "blocking": null
+      },
+      {
+        "name": "Required fields",
+        "ok": true,
+        "detail": "all present",
+        "blocking": null
+      },
+      {
+        "name": "GST and total",
+        "ok": true,
+        "detail": "GST $905.00 vs expected $905.00; total $9,955.00",
+        "blocking": null
+      },
+      {
+        "name": "Lines reconcile",
+        "ok": true,
+        "detail": "lines $9,050.00 vs subtotal $9,050.00",
+        "blocking": null
+      },
+      {
+        "name": "Duplicate",
+        "ok": false,
+        "detail": "already in AP register",
+        "blocking": "EXCEPTION"
+      },
+      {
+        "name": "Purchase order",
+        "ok": true,
+        "detail": "PO-3034 $16,000; previously billed $0 + this $9,050 = $9,050",
+        "blocking": null
+      }
+    ],
+    "gl_candidates": [
+      {
+        "code": "5300",
+        "name": "Plant - External Hire",
+        "score": 0.99,
+        "evidence": [
+          "purchase order PO-3034",
+          "supplier's usual account",
+          "description mentions hire, wet hire, float"
+        ]
+      }
+    ],
+    "suggested_gl": "5300",
+    "gl_confidence": 0.99,
+    "issues": [
+      "Duplicate: already in AP register"
+    ],
+    "related": [],
+    "remittance_matches": [],
+    "seconds": 0.432
+  },
+  {
+    "document": "bayside_BPH-4436.jpg",
+    "method": "Scanned image \u00b7 OCR",
+    "ocr_confidence": 89.2235294117647,
+    "consensus": {
+      "supplier_text": "4/4",
+      "abn": "2/4",
+      "invoice_number": "2/4",
+      "invoice_date": "3/4",
+      "due_date": "3/4",
+      "po_number": "3/4",
+      "reference": "3/4",
+      "subtotal": "3/4",
+      "gst": "3/4",
+      "total": "3/4"
+    },
+    "status": "NEEDS APPROVAL",
+    "fields": {
+      "kind": "invoice",
+      "supplier_text": "Bayside Plant Hire",
+      "abn": "73 569 568 058",
+      "invoice_number": "BPH-4436",
+      "invoice_date": "2026-10-30",
+      "due_date": "2026-11-29",
+      "po_number": "PO-3034",
+      "reference": "Northfield Reserve",
+      "lines": "[{'description': '20t excavator wet hire incl. operator', 'amount': 16500.0}, {'description': 'Float delivery and collection', 'amount': 800.0}]",
+      "subtotal": "17300.0",
+      "gst": "1730.0",
+      "total": "19030.0",
+      "asset_tags": "[]",
+      "paid": "[]"
+    },
+    "checks": [
+      {
+        "name": "ABN checksum",
+        "ok": true,
+        "detail": "73 569 568 058",
+        "blocking": null
+      },
+      {
+        "name": "Known supplier",
+        "ok": true,
+        "detail": "Bayside Plant Hire",
+        "blocking": null
+      },
+      {
+        "name": "Required fields",
+        "ok": true,
+        "detail": "all present",
+        "blocking": null
+      },
+      {
+        "name": "GST and total",
+        "ok": true,
+        "detail": "GST $1,730.00 vs expected $1,730.00; total $19,030.00",
+        "blocking": null
+      },
+      {
+        "name": "Lines reconcile",
+        "ok": true,
+        "detail": "lines $17,300.00 vs subtotal $17,300.00",
+        "blocking": null
+      },
+      {
+        "name": "Duplicate",
+        "ok": true,
+        "detail": "not previously processed",
+        "blocking": null
+      },
+      {
+        "name": "Purchase order",
+        "ok": false,
+        "detail": "PO-3034 $16,000; previously billed $8,950 + this $17,300 = $26,250 (over by $10,250)",
+        "blocking": "APPROVAL"
+      },
+      {
+        "name": "OCR confidence",
+        "ok": true,
+        "detail": "89/100",
+        "blocking": null
+      }
+    ],
+    "gl_candidates": [
+      {
+        "code": "5300",
+        "name": "Plant - External Hire",
+        "score": 0.99,
+        "evidence": [
+          "purchase order PO-3034",
+          "supplier's usual account",
+          "description mentions hire, wet hire, float"
+        ]
+      }
+    ],
+    "suggested_gl": "5300",
+    "gl_confidence": 0.99,
+    "issues": [
+      "Purchase order: PO-3034 $16,000; previously billed $8,950 + this $17,300 = $26,250 (over by $10,250)"
+    ],
+    "related": [],
+    "remittance_matches": [],
+    "seconds": 3.874
+  },
+  {
+    "document": "council_remittance.eml",
+    "method": "Email body text",
+    "ocr_confidence": null,
+    "consensus": {},
+    "status": "NEEDS APPROVAL",
+    "fields": {
+      "kind": "remittance",
+      "supplier_text": "Demo Council",
+      "abn": "None",
+      "invoice_number": "EFT-2026-10-31-114",
+      "invoice_date": "2026-10-31",
+      "due_date": "None",
+      "po_number": "None",
+      "reference": "None",
+      "lines": "[]",
+      "subtotal": "None",
+      "gst": "None",
+      "total": "500000.0",
+      "asset_tags": "[]",
+      "paid": "[('INV-5530', 500000.0)]"
+    },
+    "checks": [],
+    "gl_candidates": [],
+    "suggested_gl": "1200",
+    "gl_confidence": 0.99,
+    "issues": [
+      "INV-5530 short-paid by $60,000.00 (paid $500,000.00 of $560,000.00)"
+    ],
+    "related": [],
+    "remittance_matches": [
+      {
+        "invoice": "INV-5530",
+        "project_id": "P-101",
+        "outstanding": 560000.0,
+        "paid": 500000.0,
+        "difference": -60000.0,
+        "age_days": 30
+      }
+    ],
+    "seconds": 0.002
+  },
+  {
+    "document": "eastvale_remittance.jpg",
+    "method": "Scanned image \u00b7 OCR",
+    "ocr_confidence": 93.86486486486487,
+    "consensus": {
+      "supplier_text": "4/4",
+      "abn": "0/4",
+      "invoice_number": "4/4",
+      "invoice_date": "4/4",
+      "due_date": "0/4",
+      "po_number": "0/4",
+      "reference": "0/4",
+      "subtotal": "0/4",
+      "gst": "0/4",
+      "total": "1/4"
+    },
+    "status": "READY",
+    "fields": {
+      "kind": "remittance",
+      "supplier_text": "Eastvale College",
+      "abn": "None",
+      "invoice_number": "RA-88213",
+      "invoice_date": "2026-10-30",
+      "due_date": "None",
+      "po_number": "None",
+      "reference": "None",
+      "lines": "[]",
+      "subtotal": "None",
+      "gst": "None",
+      "total": "180000.0",
+      "asset_tags": "[]",
+      "paid": "[('INV-5524', 180000.0)]"
+    },
+    "checks": [],
+    "gl_candidates": [],
+    "suggested_gl": "1200",
+    "gl_confidence": 0.99,
+    "issues": [],
+    "related": [],
+    "remittance_matches": [
+      {
+        "invoice": "INV-5524",
+        "project_id": "P-102",
+        "outstanding": 180000.0,
+        "paid": 180000.0,
+        "difference": 0.0,
+        "age_days": 78
+      }
+    ],
+    "seconds": 2.85
+  },
+  {
+    "document": "greenline_GIS-3307.eml",
+    "method": "Email attachment \u00b7 PDF text layer",
+    "ocr_confidence": null,
+    "consensus": {},
+    "status": "EXCEPTION",
+    "fields": {
+      "kind": "invoice",
+      "supplier_text": "Greenline Irrigation Supply",
+      "abn": "73 628 587 013",
+      "invoice_number": "GIS-3307",
+      "invoice_date": "2026-10-26",
+      "due_date": "2026-11-25",
+      "po_number": "PO-3052",
+      "reference": "Eastvale College",
+      "lines": "[{'description': 'Solenoid valve', 'amount': 6200.0}, {'description': 'PVC lateral pipe', 'amount': 5598.0}]",
+      "subtotal": "11798.0",
+      "gst": "1250.0",
+      "total": "13048.0",
+      "asset_tags": "[]",
+      "paid": "[]"
+    },
+    "checks": [
+      {
+        "name": "ABN checksum",
+        "ok": true,
+        "detail": "73 628 587 013",
+        "blocking": null
+      },
+      {
+        "name": "Known supplier",
+        "ok": true,
+        "detail": "Greenline Irrigation Supply",
+        "blocking": null
+      },
+      {
+        "name": "Required fields",
+        "ok": true,
+        "detail": "all present",
+        "blocking": null
+      },
+      {
+        "name": "GST and total",
+        "ok": false,
+        "detail": "GST $1,250.00 vs expected $1,179.80; total $13,048.00",
+        "blocking": "EXCEPTION"
+      },
+      {
+        "name": "Lines reconcile",
+        "ok": true,
+        "detail": "lines $11,798.00 vs subtotal $11,798.00",
+        "blocking": null
+      },
+      {
+        "name": "Duplicate",
+        "ok": true,
+        "detail": "not previously processed",
+        "blocking": null
+      },
+      {
+        "name": "Purchase order",
+        "ok": true,
+        "detail": "PO-3052 $12,500; previously billed $0 + this $11,798 = $11,798",
+        "blocking": null
+      }
+    ],
+    "gl_candidates": [
+      {
+        "code": "5120",
+        "name": "Materials - Irrigation & Drainage",
+        "score": 0.99,
+        "evidence": [
+          "purchase order PO-3052",
+          "supplier's usual account",
+          "description mentions solenoid, valve, lateral, pipe"
+        ]
+      }
+    ],
+    "suggested_gl": "5120",
+    "gl_confidence": 0.99,
+    "issues": [
+      "GST and total: GST $1,250.00 vs expected $1,179.80; total $13,048.00"
+    ],
+    "related": [],
+    "remittance_matches": [],
+    "seconds": 0.025
+  },
+  {
+    "document": "kerrigan_KQ-5520.eml",
+    "method": "Email attachment \u00b7 PDF text layer",
+    "ocr_confidence": null,
+    "consensus": {},
+    "status": "READY",
+    "fields": {
+      "kind": "invoice",
+      "supplier_text": "Kerrigan Quarries",
+      "abn": "31 023 281 556",
+      "invoice_number": "KQ-5520",
+      "invoice_date": "2026-10-28",
+      "due_date": "2026-11-27",
+      "po_number": "PO-3040",
+      "reference": "None",
+      "lines": "[{'description': '20mm Class 2 crushed rock', 'amount': 33120.0}, {'description': 'Cartage', 'amount': 5280.0}]",
+      "subtotal": "38400.0",
+      "gst": "3840.0",
+      "total": "42240.0",
+      "asset_tags": "[]",
+      "paid": "[]"
+    },
+    "checks": [
+      {
+        "name": "ABN checksum",
+        "ok": true,
+        "detail": "31 023 281 556",
+        "blocking": null
+      },
+      {
+        "name": "Known supplier",
+        "ok": true,
+        "detail": "Kerrigan Quarries",
+        "blocking": null
+      },
+      {
+        "name": "Required fields",
+        "ok": true,
+        "detail": "all present",
+        "blocking": null
+      },
+      {
+        "name": "GST and total",
+        "ok": true,
+        "detail": "GST $3,840.00 vs expected $3,840.00; total $42,240.00",
+        "blocking": null
+      },
+      {
+        "name": "Lines reconcile",
+        "ok": true,
+        "detail": "lines $38,400.00 vs subtotal $38,400.00",
+        "blocking": null
+      },
+      {
+        "name": "Duplicate",
+        "ok": true,
+        "detail": "not previously processed",
+        "blocking": null
+      },
+      {
+        "name": "Purchase order",
+        "ok": true,
+        "detail": "PO-3040 $48,000; previously billed $0 + this $38,400 = $38,400",
+        "blocking": null
+      }
+    ],
+    "gl_candidates": [
+      {
+        "code": "5110",
+        "name": "Materials - Aggregates & Base",
+        "score": 0.99,
+        "evidence": [
+          "purchase order PO-3040",
+          "supplier's usual account",
+          "description mentions crushed rock"
+        ]
+      }
+    ],
+    "suggested_gl": "5110",
+    "gl_confidence": 0.99,
+    "issues": [],
+    "related": [],
+    "remittance_matches": [],
+    "seconds": 0.026
+  },
+  {
+    "document": "meridian_MSC-0042.jpg",
+    "method": "Scanned image \u00b7 OCR",
+    "ocr_confidence": 92.62068965517241,
+    "consensus": {
+      "supplier_text": "4/4",
+      "abn": "2/4",
+      "invoice_number": "3/4",
+      "invoice_date": "4/4",
+      "due_date": "4/4",
+      "po_number": "0/4",
+      "reference": "4/4",
+      "subtotal": "4/4",
+      "gst": "4/4",
+      "total": "4/4"
+    },
+    "status": "NEEDS APPROVAL",
+    "fields": {
+      "kind": "invoice",
+      "supplier_text": "Meridian Site Consulting",
+      "abn": "20 052 172 123",
+      "invoice_number": "MSC-0042",
+      "invoice_date": "2026-10-29",
+      "due_date": "2026-11-12",
+      "po_number": "None",
+      "reference": "Northfield Reserve",
+      "lines": "[{'description': 'Site assessment and geotechnical report', 'amount': 6400.0}, {'description': 'Additional field testing - subgrade', 'amount': 1850.0}]",
+      "subtotal": "8250.0",
+      "gst": "825.0",
+      "total": "9075.0",
+      "asset_tags": "[]",
+      "paid": "[]"
+    },
+    "checks": [
+      {
+        "name": "ABN checksum",
+        "ok": true,
+        "detail": "20 052 172 123",
+        "blocking": null
+      },
+      {
+        "name": "Known supplier",
+        "ok": false,
+        "detail": "Not in supplier master \u2014 new supplier",
+        "blocking": "APPROVAL"
+      },
+      {
+        "name": "Required fields",
+        "ok": true,
+        "detail": "all present",
+        "blocking": null
+      },
+      {
+        "name": "GST and total",
+        "ok": true,
+        "detail": "GST $825.00 vs expected $825.00; total $9,075.00",
+        "blocking": null
+      },
+      {
+        "name": "Lines reconcile",
+        "ok": true,
+        "detail": "lines $8,250.00 vs subtotal $8,250.00",
+        "blocking": null
+      },
+      {
+        "name": "Duplicate",
+        "ok": true,
+        "detail": "not previously processed",
+        "blocking": null
+      },
+      {
+        "name": "OCR confidence",
+        "ok": true,
+        "detail": "93/100",
+        "blocking": null
+      }
+    ],
+    "gl_candidates": [
+      {
+        "code": "5600",
+        "name": "Project - Site Investigation",
+        "score": 0.4800000000000001,
+        "evidence": [
+          "description mentions geotechnical, subgrade, testing"
+        ]
+      },
+      {
+        "code": "6200",
+        "name": "Professional Fees",
+        "score": 0.32,
+        "evidence": [
+          "description mentions assessment, report"
+        ]
+      }
+    ],
+    "suggested_gl": null,
+    "gl_confidence": 0.48,
+    "issues": [
+      "GL not confirmed \u2014 best match 5600 Project - Site Investigation at 48% confidence",
+      "Known supplier: Not in supplier master \u2014 new supplier"
+    ],
+    "related": [
+      "May relate to pending variation V-101-2 \"Unsuitable subgrade removal and replacement\" \u2014 confirm whether this cost is recoverable from the client"
+    ],
+    "remittance_matches": [],
+    "seconds": 4.166
+  },
+  {
+    "document": "pitchline_PSS-20915.eml",
+    "method": "Email attachment \u00b7 PDF text layer",
+    "ocr_confidence": null,
+    "consensus": {},
+    "status": "READY",
+    "fields": {
+      "kind": "invoice",
+      "supplier_text": "Pitchline Synthetic Surfaces",
+      "abn": "49 624 595 711",
+      "invoice_number": "PSS-20915",
+      "invoice_date": "2026-10-27",
+      "due_date": "2026-11-26",
+      "po_number": "PO-3021",
+      "reference": "None",
+      "lines": "[{'description': 'Synthetic turf 60mm football system', 'amount': 154800.0}, {'description': 'Rubber crumb infill', 'amount': 30680.0}]",
+      "subtotal": "185480.0",
+      "gst": "18548.0",
+      "total": "204028.0",
+      "asset_tags": "[]",
+      "paid": "[]"
+    },
+    "checks": [
+      {
+        "name": "ABN checksum",
+        "ok": true,
+        "detail": "49 624 595 711",
+        "blocking": null
+      },
+      {
+        "name": "Known supplier",
+        "ok": true,
+        "detail": "Pitchline Synthetic Surfaces",
+        "blocking": null
+      },
+      {
+        "name": "Required fields",
+        "ok": true,
+        "detail": "all present",
+        "blocking": null
+      },
+      {
+        "name": "GST and total",
+        "ok": true,
+        "detail": "GST $18,548.00 vs expected $18,548.00; total $204,028.00",
+        "blocking": null
+      },
+      {
+        "name": "Lines reconcile",
+        "ok": true,
+        "detail": "lines $185,480.00 vs subtotal $185,480.00",
+        "blocking": null
+      },
+      {
+        "name": "Duplicate",
+        "ok": true,
+        "detail": "not previously processed",
+        "blocking": null
+      },
+      {
+        "name": "Purchase order",
+        "ok": true,
+        "detail": "PO-3021 $280,000; previously billed $89,200 + this $185,480 = $274,680",
+        "blocking": null
+      }
+    ],
+    "gl_candidates": [
+      {
+        "code": "5100",
+        "name": "Materials - Turf & Infill",
+        "score": 0.99,
+        "evidence": [
+          "purchase order PO-3021",
+          "supplier's usual account",
+          "description mentions synthetic turf, turf, infill, rubber crumb"
+        ]
+      }
+    ],
+    "suggested_gl": "5100",
+    "gl_confidence": 0.99,
+    "issues": [],
+    "related": [],
+    "remittance_matches": [],
+    "seconds": 0.054
+  },
+  {
+    "document": "southway_SF-77812.jpg",
+    "method": "Scanned image \u00b7 OCR",
+    "ocr_confidence": 87.60240963855422,
+    "consensus": {
+      "supplier_text": "4/4",
+      "abn": "1/4",
+      "invoice_number": "4/4",
+      "invoice_date": "4/4",
+      "due_date": "4/4",
+      "po_number": "0/4",
+      "reference": "4/4",
+      "subtotal": "4/4",
+      "gst": "4/4",
+      "total": "4/4"
+    },
+    "status": "READY",
+    "fields": {
+      "kind": "invoice",
+      "supplier_text": "Southway Fuels",
+      "abn": "85 661 250 090",
+      "invoice_number": "SF-77812",
+      "invoice_date": "2026-10-24",
+      "due_date": "2026-11-07",
+      "po_number": "None",
+      "reference": "Bulk tank delivery",
+      "lines": "[{'description': 'Diesel bulk delivery', 'amount': 8064.0}, {'description': 'AdBlue 20L drums', 'amount': 228.0}]",
+      "subtotal": "8292.0",
+      "gst": "829.2",
+      "total": "9121.2",
+      "asset_tags": "[]",
+      "paid": "[]"
+    },
+    "checks": [
+      {
+        "name": "ABN checksum",
+        "ok": true,
+        "detail": "85 661 250 090",
+        "blocking": null
+      },
+      {
+        "name": "Known supplier",
+        "ok": true,
+        "detail": "Southway Fuels",
+        "blocking": null
+      },
+      {
+        "name": "Required fields",
+        "ok": true,
+        "detail": "all present",
+        "blocking": null
+      },
+      {
+        "name": "GST and total",
+        "ok": true,
+        "detail": "GST $829.20 vs expected $829.20; total $9,121.20",
+        "blocking": null
+      },
+      {
+        "name": "Lines reconcile",
+        "ok": true,
+        "detail": "lines $8,292.00 vs subtotal $8,292.00",
+        "blocking": null
+      },
+      {
+        "name": "Duplicate",
+        "ok": true,
+        "detail": "not previously processed",
+        "blocking": null
+      },
+      {
+        "name": "OCR confidence",
+        "ok": true,
+        "detail": "88/100",
+        "blocking": null
+      }
+    ],
+    "gl_candidates": [
+      {
+        "code": "5410",
+        "name": "Plant - Fuel & Oil",
+        "score": 0.9,
+        "evidence": [
+          "supplier's usual account",
+          "description mentions diesel, adblue"
+        ]
+      }
+    ],
+    "suggested_gl": "5410",
+    "gl_confidence": 0.9,
+    "issues": [],
+    "related": [],
+    "remittance_matches": [],
+    "seconds": 3.986
+  },
+  {
+    "document": "torque_TH-1187.jpg",
+    "method": "Scanned image \u00b7 OCR",
+    "ocr_confidence": 92.43333333333334,
+    "consensus": {
+      "supplier_text": "4/4",
+      "abn": "1/4",
+      "invoice_number": "2/4",
+      "invoice_date": "4/4",
+      "due_date": "4/4",
+      "po_number": "0/4",
+      "reference": "0/4",
+      "subtotal": "4/4",
+      "gst": "4/4",
+      "total": "4/4"
+    },
+    "status": "READY",
+    "fields": {
+      "kind": "invoice",
+      "supplier_text": "Torque Hydraulics",
+      "abn": "14 281 152 896",
+      "invoice_number": "TH-1187",
+      "invoice_date": "2026-10-22",
+      "due_date": "2026-11-21",
+      "po_number": "None",
+      "reference": "None",
+      "lines": "[{'description': 'Hydraulic boom cylinder reseal kit', 'amount': 1840.0}, {'description': 'Workshop labour - hydraulic repair', 'amount': 1890.0}, {'description': 'Hose assembly replacement', 'amount': 636.0}]",
+      "subtotal": "4366.0",
+      "gst": "436.6",
+      "total": "4802.6",
+      "asset_tags": "['BX20-01']",
+      "paid": "[]"
+    },
+    "checks": [
+      {
+        "name": "ABN checksum",
+        "ok": true,
+        "detail": "14 281 152 896",
+        "blocking": null
+      },
+      {
+        "name": "Known supplier",
+        "ok": true,
+        "detail": "Torque Hydraulics",
+        "blocking": null
+      },
+      {
+        "name": "Required fields",
+        "ok": true,
+        "detail": "all present",
+        "blocking": null
+      },
+      {
+        "name": "GST and total",
+        "ok": true,
+        "detail": "GST $436.60 vs expected $436.60; total $4,802.60",
+        "blocking": null
+      },
+      {
+        "name": "Lines reconcile",
+        "ok": true,
+        "detail": "lines $4,366.00 vs subtotal $4,366.00",
+        "blocking": null
+      },
+      {
+        "name": "Duplicate",
+        "ok": true,
+        "detail": "not previously processed",
+        "blocking": null
+      },
+      {
+        "name": "OCR confidence",
+        "ok": true,
+        "detail": "92/100",
+        "blocking": null
+      }
+    ],
+    "gl_candidates": [
+      {
+        "code": "5420",
+        "name": "Plant - Repairs & Maintenance",
+        "score": 0.9,
+        "evidence": [
+          "supplier's usual account",
+          "description mentions hydraulic, repair, hose, workshop"
+        ]
+      }
+    ],
+    "suggested_gl": "5420",
+    "gl_confidence": 0.9,
+    "issues": [],
+    "related": [
+      "Asset reference read as BX20-01 \u2192 matched to plant register EX20-01; cost will be tracked against the machine"
+    ],
+    "remittance_matches": [],
+    "seconds": 4.029
+  }
+]
