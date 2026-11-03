@@ -23,16 +23,21 @@ tr:last-child td{border-bottom:none}
 .note{color:var(--muted);font-size:12.5px}.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
 footer{margin-top:28px;color:var(--muted);font-size:12px}
 
-.lede{font-size:16px;max-width:820px;margin:0 0 14px}
-.step{display:flex;gap:10px;align-items:baseline}.step b{min-width:92px;color:var(--green)}
+.lede{font-size:16px;max-width:840px;margin:0 0 14px}
 .phase{border-top:4px solid var(--green)}.phase.p2{border-top-color:#5b8f3e}.phase.p3{border-top-color:#8bb04a}
 .phase .when{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .prio{display:grid;grid-template-columns:44px 1fr;gap:12px}.prio .num{font-size:26px;font-weight:700;color:var(--green)}
-ul.tight{margin:6px 0 0;padding-left:18px}ul.tight li{margin:3px 0}
+ul.tight{margin:6px 0 0;padding-left:18px}ul.tight li{margin:4px 0}
 .pager{display:flex;justify-content:space-between;gap:10px;margin-top:26px}
 .pager span{flex:1}.pager a{flex:1;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-decoration:none}
 .pager a:hover{border-color:var(--green)}.pager .r{text-align:right}.pager small{display:block;color:var(--muted)}
-.say{background:var(--green-l);border-left:4px solid var(--green);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;max-width:860px}
+.say{background:var(--green-l);border-left:4px solid var(--green);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;max-width:880px}
+.brief{background:#fff;border:1px dashed #b9c4bb;border-radius:8px;padding:10px 14px;margin:0 0 14px;font-size:13px}
+.brief q{font-style:italic}.brief .crit{margin-top:6px}
+.crit span{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:10px;background:#eef1ec;color:#33433a;margin:2px 4px 0 0}
+.lv{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:9px;margin-right:6px;vertical-align:1px;white-space:nowrap}
+.L1{background:#2f6b3f;color:#fff}.L2{background:#cfe3c9;color:#23502f}.L3{background:#eceeea;color:#555;border:1px dashed #aab3ab}
+.levels .card{border-top:4px solid var(--green)}.levels .c2{border-top-color:#8bb04a}.levels .c3{border-top-color:#b8bfb9}
 .qa details{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:8px 0}
 .qa summary{cursor:pointer;font-weight:600}.qa details p{margin:8px 0 0}
 .slidecount{font-size:12px;color:var(--muted)}
@@ -43,45 +48,50 @@ border-bottom:1px solid var(--line)}.sitenav .row{display:flex;gap:6px;flex-wrap
 .sitenav .g{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);min-width:84px}
 .sitenav a{padding:3px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff}
 .sitenav a:hover{border-color:var(--green)}.sitenav a.on{background:var(--green);border-color:var(--green);color:#fff}
-@media(max-width:800px){.sitenav{position:static}.sitenav .g{min-width:100%}}</style><nav class='sitenav' aria-label='Site'><div class='row'><span class='g'>90-day plan</span><a href='/index.html'>Overview</a><a href='/plan-1.html'>1 · Get to know</a><a href='/plan-2.html'>2 · Priorities</a><a href='/plan-3.html'>3 · Partnering</a><a href='/plan-4.html' class='on'>4 · Risks & quick wins</a><a href='/plan-5.html'>5 · Leadership</a><a href='/qa.html'>Q&A prep</a></div><div class='row'><span class='g'>Prototypes</span><a href='/prototypes.html'>All</a><a href='/reader.html'>Invoice reader</a><a href='/invoice-reader-batch.html'>Batch results</a><a href='/project-control.html'>Margin early-warning</a><a href='/plant-allocation.html'>Plant allocation</a><a href='/power-bi.html'>Power BI feeds</a></div></nav><header><h1>4 · Early Risks, Opportunities and Quick Wins</h1><p>What could go wrong, and what we can win early</p></header>
-<div class="banner" style="background:#eef5ef;border-color:#b9d3bf">Plan for discussion. Written from outside the business, so every priority is a hypothesis I would test in the first 30 days, not a conclusion. The linked prototypes run on invented data.</div><p class='slidecount'>Section 5 of 7 · use ← → keys to move between sections</p>
+@media(max-width:800px){.sitenav{position:static}.sitenav .g{min-width:100%}}</style><nav class='sitenav' aria-label='Site'><div class='row'><span class='g'>90-day plan</span><a href='/index.html'>Overview</a><a href='/plan-1.html'>1 · Get to know</a><a href='/plan-2.html'>2 · Priorities</a><a href='/plan-3.html'>3 · Partnering</a><a href='/plan-4.html' class='on'>4 · Risks & quick wins</a><a href='/plan-5.html'>5 · Leadership</a><a href='/qa.html'>Q&A prep</a></div><div class='row'><span class='g'>Prototypes</span><a href='/prototypes.html'>All</a><a href='/reader.html'>Invoice reader</a><a href='/invoice-reader-batch.html'>Batch results</a><a href='/project-control.html'>Margin early-warning</a><a href='/plant-allocation.html'>Plant allocation</a><a href='/power-bi.html'>Power BI feeds</a></div></nav><header><h1>4 · Early Risks, Opportunities and Quick Wins</h1><p>Protect delivery now; hold bigger opportunities for later</p></header>
+<div class="banner" style="background:#eef5ef;border-color:#b9d3bf">Guiding principle: no dramatic change. The pipeline of work Green Turf has already committed to is delivered first. Anything new is added only if it helps that delivery, and strategic change waits until the pipeline is complete. Written from outside the business, so it is tested and adjusted in the first 30 days.</div><p class='slidecount'>Section 5 of 7 · use ← → keys to move between sections</p>
+<div class='brief'><b>The brief asks:</b> <q>Early Risks, Opportunities & Quick Wins</q><div class='crit'><b style='font-size:12px'>Assessed against:</b> <span>Strong operational judgement</span><span>Commercial awareness</span><span>Ability to diagnose and sequence change</span></div></div>
 <div class="grid k3">
 <div class="card"><h3><span class="pill RED">Risks</span></h3><ul class="tight">
-<li><b>Changing too much, too fast,</b> or looking "corporate" to a hands-on team. <i>Mitigation:</i> listen first, start on
-site, small visible fixes</li>
-<li><b>Key-person dependency</b> on Mick and a few long-serving staff. <i>Mitigation:</i> document how the critical
-work gets done; build depth behind them</li>
-<li><b>Growth outrunning capacity:</b> quality, safety and reputation slip. <i>Mitigation:</i> monthly sales and
-capacity review</li>
-<li><b>Cash squeeze</b> from slow invoicing and upfront materials. <i>Mitigation:</i> 13-week cash forecast</li>
-<li><b>Data may be thin or inconsistent.</b> <i>Mitigation:</i> start with what exists; improve capture gradually</li></ul></div>
-<div class="card"><h3><span class="pill GREEN">Quick wins (first 60 days)</span></h3><ul class="tight">
-<li>Weekly margin snapshot on the five largest live jobs</li>
-<li>Invoice-on-milestone rule and a weekly debtor call list</li>
-<li>Ticket, licence and induction expiry register</li>
-<li>One standard job handover checklist (sales → ops → site)</li>
-<li>Fix one or two frustrations crews raise in week one, and tell them it was fixed</li>
-<li>Weekly operations meeting with a visible action list</li></ul></div>
-<div class="card"><h3><span class="pill AMBER">Opportunities (90 days +)</span></h3><ul class="tight">
-<li>Use completed-job costs to price quotes more accurately</li>
-<li>Automate supplier invoice processing and coding to cut admin time</li>
-<li>Owned vs hired plant decisions from utilisation data</li>
-<li>Grow recurring maintenance work for steadier revenue</li>
-<li>A single KPI pack in Power BI or Excel from existing systems</li></ul></div></div>
-<h2>Working examples</h2>
-<p style="max-width:820px">To show how I think about the quick wins and opportunities, I built three small prototypes on
-invented data. They are illustrations of the approach, not a proposal to buy or build software in the first 90 days.</p>
+<li><b>Change that distracts from delivery.</b> The biggest risk I bring. <i>Mitigation:</i> no new systems or
+restructures in 90 days; Level 2 only where it helps live jobs</li>
+<li><b>A committed job slipping</b> on time, cost or quality. <i>Mitigation:</i> weekly live-jobs check-in; clear blockers
+fast</li>
+<li><b>Over-committing:</b> new work stretching current crews and plant. <i>Mitigation:</i> capacity check with Dean before
+new commitments</li>
+<li><b>Cash gaps</b> if milestones aren't invoiced promptly. <i>Mitigation:</i> invoice as each milestone completes</li>
+<li><b>Losing trust</b> by looking "corporate". <i>Mitigation:</i> listen first, be on site, help before suggesting</li>
+</ul></div>
+<div class="card"><h3><span class="pill GREEN">Quick wins</span></h3>
+<p class="note" style="margin:0 0 4px">Only things that help the current pipeline, using existing tools:</p><ul class="tight">
+<li><span class='lv L1'>Level 1</span> Clear the blockers job leads raise in week one, and tell them it is done</li>
+<li><span class='lv L1'>Level 1</span> Confirm tickets and inductions for everyone on live sites</li>
+<li><span class='lv L2'>Level 2</span> Invoice each milestone as it completes; chase overdue debtors weekly</li>
+<li><span class='lv L2'>Level 2</span> Capture variations on live jobs as they happen</li>
+<li><span class='lv L2'>Level 2</span> One short weekly check-in on live jobs, with owners and dates</li></ul></div>
+<div class="card"><h3><span class="pill AMBER">Opportunities, after the pipeline</span></h3><ul class="tight">
+<li><span class='lv L3'>Level 3</span> Use completed-job costs to price future quotes more accurately</li>
+<li><span class='lv L3'>Level 3</span> Plan crews and plant ahead of the next pipeline</li>
+<li><span class='lv L3'>Level 3</span> Reduce manual admin, such as supplier invoice processing</li>
+<li><span class='lv L3'>Level 3</span> A simple KPI pack from existing systems</li>
+<li><span class='lv L3'>Level 3</span> Grow recurring maintenance work from completed jobs</li></ul>
+<p class="note" style="margin:6px 0 0">Proposed at day 90. Mick and Dean decide the timing.</p></div></div>
+<h2>Illustrations of the later opportunities</h2>
+<p style="max-width:840px">To show how I think about the Level 3 opportunities, I built three small prototypes on invented
+data. They are <b>not</b> proposals for the first 90 days. They show what could be considered once the committed pipeline is
+delivered, if Mick and Dean want to.</p>
 <div class="grid k3">
-<a class="card" href="/project-control.html" style="text-decoration:none;color:inherit"><h3>Margin early-warning →</h3>
+<a class="card" href="/project-control.html" style="text-decoration:none;color:inherit"><h3><span class='lv L3'>Level 3</span> Margin early-warning →</h3>
 <p class="note" style="margin:0">Forecast margin at completion, exceptions with owners and due dates.</p></a>
-<a class="card" href="/reader.html" style="text-decoration:none;color:inherit"><h3>Invoice reader, try it live →</h3>
+<a class="card" href="/reader.html" style="text-decoration:none;color:inherit"><h3><span class='lv L3'>Level 3</span> Invoice reader →</h3>
 <p class="note" style="margin:0">Reads a scanned invoice, checks ABN, GST, PO and duplicates, suggests the GL account.</p></a>
-<a class="card" href="/plant-allocation.html" style="text-decoration:none;color:inherit"><h3>Plant allocation →</h3>
+<a class="card" href="/plant-allocation.html" style="text-decoration:none;color:inherit"><h3><span class='lv L3'>Level 3</span> Plant allocation →</h3>
 <p class="note" style="margin:0">Lowest-cost weekly plan across owned plant and hire, gated by tickets and inductions.</p></a>
 </div><div class='pager'><a class='l' href='/plan-3.html'><small>← Previous</small>3 · Partnering with the Owner/MD and the Marketing &amp; Growth Director</a><a class='r' href='/plan-5.html'><small>Next →</small>5 · My Leadership Approach</a></div><script>
 document.addEventListener('keydown', e => {
   if (e.target.closest('input,textarea,select') || e.metaKey || e.ctrlKey || e.altKey) return;
-  const a = document.querySelector(e.key === 'ArrowRight' ? '.pager a.r' : e.key === 'ArrowLeft' ? '.pager a.l' : null);
+  const sel = e.key === 'ArrowRight' ? '.pager a.r' : e.key === 'ArrowLeft' ? '.pager a.l' : null;
+  const a = sel && document.querySelector(sel);
   if (a) location.href = a.href;
 });
 </script>

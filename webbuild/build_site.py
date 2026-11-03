@@ -174,10 +174,13 @@ def landing() -> str:
     html = "<div class='grid k2'>" + "".join(
         f"<a class='card' href='{u}' style='text-decoration:none;color:inherit'><h3>{t} →</h3><p class='note' style='margin:0'>{d}</p></a>"
         for u, t, d in cards) + "</div>"
+    html = """<div class="banner" style="background:#f1f2ef;border:1px dashed #aab3ab"><b>Level 3: for later.</b> These are
+illustrations of improvements that could be considered once the committed pipeline is delivered, if Mick and Dean want to.
+They are not proposals for the first 90 days. <a href="/index.html">Back to the 90-day plan</a>.</div>""" + html
     html += """<h2>What this is</h2><p style="max-width:760px">Working prototypes prepared for a Business Operations Director
-interview. They show how targeted automation could give management better visibility, remove repetitive work and
-improve the speed and quality of decisions. They are demonstrations on invented data, not implemented systems, and they
-make no claim about any company's current performance.</p>"""
+interview. They show how targeted automation could later give management better visibility and remove repetitive work.
+They are demonstrations on invented data, not implemented systems, and they make no claim about any company's current
+performance.</p>"""
     return page("Business Modernisation Prototypes", "James Fischer-Myall · LogisticsDx", html)
 
 
