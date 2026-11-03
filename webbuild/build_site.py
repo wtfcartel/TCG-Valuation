@@ -248,7 +248,8 @@ def main() -> None:
     (PUBLIC / "brand").mkdir()
     for f in ("pico.green.min.css", "PICO-LICENSE.md", "chart.umd.min.js", "CHARTJS-LICENSE.md"):
         shutil.copy(SITE / "vendor" / f, PUBLIC / "vendor" / f)
-    shutil.copy(SITE / "brand" / "greenturf-logo.jpg", PUBLIC / "brand" / "greenturf-logo.jpg")
+    for logo in ("greenturf-logo.jpg", "logisticsdx-logo.png"):
+        shutil.copy(SITE / "brand" / logo, PUBLIC / "brand" / logo)
     shutil.copy(SITE / "brand.css", PUBLIC / "brand.css")
     for page_file in PUBLIC.glob("*.html"):
         page_file.write_text(theme(page_file.read_text(encoding="utf-8")), encoding="utf-8")
