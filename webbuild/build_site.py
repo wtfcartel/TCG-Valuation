@@ -19,7 +19,8 @@ SITE = ROOT / "webbuild"
 NAV_GROUPS = [
     ("90-day plan", [("index.html", "Overview"), ("plan-1.html", "1 · Get to know"), ("plan-2.html", "2 · Priorities"),
                      ("plan-3.html", "3 · Partnering"), ("plan-4.html", "4 · Risks & quick wins"),
-                     ("plan-5.html", "5 · Leadership"), ("qa.html", "Q&A prep")]),
+                     ("plan-5.html", "5 · Leadership"), ("season.html", "Season & ROIC"),
+                     ("qa.html", "Q&A prep")]),
     ("Prototypes", [("prototypes.html", "All"), ("reader.html", "Invoice reader"),
                     ("invoice-reader-batch.html", "Batch results"), ("project-control.html", "Margin early-warning"),
                     ("plant-allocation.html", "Plant allocation"), ("power-bi.html", "Power BI feeds")]),
@@ -38,7 +39,19 @@ def nav_for(fname: str) -> str:
         f"<div class='row'><span class='g'>{g}</span>" + "".join(
             f"<a href='/{u}'{' class=\'on\'' if u == fname else ''}>{t}</a>" for u, t in links) + "</div>"
         for g, links in NAV_GROUPS)
-    return NAV_CSS + f"<nav class='sitenav' aria-label='Site'>{rows}</nav>"
+    return NAV_CSS + BRANDBAR + f"<nav class='sitenav' aria-label='Site'>{rows}</nav>"
+
+
+BRANDBAR = """<div class="brandbar"><a href="/index.html" aria-label="Back to the 90-day plan"><img
+src="/brand/greenturf-logo.jpg" alt="Green Turf" width="174" height="52"></a><div class="by">Prepared for Green Turf by
+<b>James Fischer-Myall</b><br>Business Operations Director, final round</div></div>"""
+
+
+def theme(html: str) -> str:
+    """Pico CSS underneath, the page's own styles, then the Green Turf brand layer on top. Light theme only."""
+    return (html.replace('<html lang="en">', '<html lang="en" data-theme="light">', 1)
+            .replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<link rel="stylesheet" href="/vendor/pico.green.min.css">', 1)
+            .replace("</head>", '<link rel="stylesheet" href="/brand.css"></head>', 1))
 
 SAMPLES = [
     ("meridian_MSC-0042", "Consultant invoice: no GL, new supplier", "Needs approval"),
@@ -94,7 +107,7 @@ const pill = {{'READY':'GREEN','NEEDS APPROVAL':'AMBER','EXCEPTION':'RED'}};
 let worker = null;
 async function getWorker() {{
   if (worker) return worker;
-  if (!window.Tesseract) throw new Error('OCR library didn't load. Check the connection, or paste the text instead.');
+  if (!window.Tesseract) throw new Error('OCR library did not load. Check the connection, or paste the text instead.');
   $('#progress').textContent = 'Loading OCR engine (first time only)…';
   worker = await Tesseract.createWorker('eng', 1, {{ logger: m => {{ if (m.status === 'recognizing text')
     $('#progress').textContent = `Reading… ${{Math.round(m.progress * 100)}}%`; }} }});
@@ -154,7 +167,7 @@ document.querySelectorAll('.sample').forEach(b => b.addEventListener('click', as
 $('#file').addEventListener('change', e => {{ const f = e.target.files[0]; if (f) readImage(f, f.name); }});
 $('#pasteGo').addEventListener('click', () => {{ const t = $('#paste').value; if (t.trim()) send(t, 'pasted text', null); }});
 </script>"""
-    return page("AP Invoice Reader — Live", "Read a scanned invoice or remittance, validate it, suggest the GL, route it", body)
+    return page("AP Invoice Reader | Live", "Read a scanned invoice or remittance, validate it, suggest the GL, route it", body)
 
 
 def landing() -> str:
@@ -194,6 +207,9 @@ def power_bi() -> str:
         ("plant_plan", "Next week's allocation: owned vs hire, cost and hire alternative"),
         ("plant_fleet", "8-week utilisation, breakdowns, contribution by machine"),
         ("plant_actions", "Compliance and fleet actions with owners"),
+        ("season_monthly", "Seasonality: ROIC, utilisation and on-time completion per unit per month (demonstrative)"),
+        ("season_units", "Seasonality: full-year ROIC per unit"),
+        ("season_business", "Seasonality: whole-business ROIC and service efficiency by month"),
     ]
     rows = "".join(f"<tr><td class='mono'>{t}</td><td>{d}</td><td><a href='/api/powerbi?table={t}&format=csv'>CSV</a> · "
                    f"<a href='/api/powerbi?table={t}&format=json'>JSON</a></td></tr>" for t, d in feeds)
@@ -231,6 +247,14 @@ def main() -> None:
         shutil.copy(f, PUBLIC / "samples" / f.name)
     for f in ("ap_review_batch.xlsx", "xero_bills_import.csv"):
         shutil.copy(OUTPUT / "invoice_reader" / f, PUBLIC / "downloads" / f)
+    (PUBLIC / "vendor").mkdir()
+    (PUBLIC / "brand").mkdir()
+    for f in ("pico.green.min.css", "PICO-LICENSE.md"):
+        shutil.copy(SITE / "vendor" / f, PUBLIC / "vendor" / f)
+    shutil.copy(SITE / "brand" / "greenturf-logo.jpg", PUBLIC / "brand" / "greenturf-logo.jpg")
+    shutil.copy(SITE / "brand.css", PUBLIC / "brand.css")
+    for page_file in PUBLIC.glob("*.html"):
+        page_file.write_text(theme(page_file.read_text(encoding="utf-8")), encoding="utf-8")
     print("Site written to", PUBLIC, "-", sum(1 for _ in PUBLIC.rglob("*") if _.is_file()), "files")
 
 

@@ -19,6 +19,8 @@ production applications in `wtfcartel/Trial-1-Cartel-v1` and `wtfcartel/TCG-Valu
 | `output/` | Generated pages, workbook, Xero CSV, draft emails, JSON, test results and run log |
 | `screenshots/` | Captured pages, plus cropped versions used in the executive pack |
 | `tests/test_demos.py` | 17 tests covering the calculations and controls |
+| `demo4_seasonality/`, `data/seasonality/` | Season model: ROIC per unit and service efficiency by month (also feeds `season_*` Power BI tables) |
+| `webbuild/brand.css`, `webbuild/vendor/` | Look and feel: Pico CSS v2.0.6 (MIT, github.com/picocss/pico) with a Green Turf brand layer |
 | `webbuild/plan.py` | The 90-day plan pages (content lives here; edit and rebuild) |
 | `api/`, `public/`, `webbuild/`, `vercel.json` | The Vercel deployment: Python functions, static site, and its build script |
 
@@ -34,6 +36,7 @@ step (`vercel.json`). Every page carries a two-row navigation bar: **90-day plan
 |---|---|
 | `/` (`index.html`) | **"My First 90 Days" presentation**: overview, timeline, agenda and day-90 scorecard |
 | `/plan-1.html` … `/plan-5.html` | One page per area of the final-round brief; ← → keys move between them, so the site can be presented directly |
+| `/season.html` | Season, ROIC per unit and service efficiency by month (demonstrative season: slow Jan–Feb, heavy growth Mar–May, dead Jun–Jul, peak Aug–Nov) |
 | `/qa.html` | Q&A preparation: likely questions grouped by what the panel said it would explore |
 | `/prototypes.html` | Index of the working prototypes |
 | `/reader.html` | Live reader: pick a sample scan or upload an image; OCR runs in the browser (tesseract.js, 3 layout passes), then `/api/read` validates, suggests the GL and drafts the approval email |

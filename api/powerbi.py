@@ -20,6 +20,7 @@ sys.path.insert(0, ROOT)
 
 from demo1_project_control.engine import RULE_LABEL, run as run_projects  # noqa: E402
 from demo2_plant_allocation.engine import run as run_plant  # noqa: E402
+from demo4_seasonality.engine import run as run_season  # noqa: E402
 
 
 def t_projects() -> list[dict]:
@@ -86,9 +87,22 @@ def t_ap_queue() -> list[dict]:
     return rows
 
 
+def t_season_monthly() -> list[dict]:
+    return run_season()["monthly"]
+
+
+def t_season_units() -> list[dict]:
+    return run_season()["annual"]
+
+
+def t_season_business() -> list[dict]:
+    return run_season()["business"]
+
+
 TABLES = {"projects": t_projects, "exceptions": t_exceptions, "margin_history": t_margin_history,
           "debtor_ageing": t_debtor_ageing, "ap_queue": t_ap_queue, "plant_plan": t_plant_plan,
-          "plant_fleet": t_plant_fleet, "plant_actions": t_plant_actions}
+          "plant_fleet": t_plant_fleet, "plant_actions": t_plant_actions,
+          "season_monthly": t_season_monthly, "season_units": t_season_units, "season_business": t_season_business}
 
 
 def to_csv(rows: list[dict]) -> str:

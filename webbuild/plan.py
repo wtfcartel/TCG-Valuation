@@ -16,6 +16,7 @@ Nothing here claims knowledge of Green Turf's internal performance.
 from __future__ import annotations
 
 from common.report import CSS, esc
+from webbuild.season import section as season_section
 
 PLAN_CSS = """
 .lede{font-size:16px;max-width:840px;margin:0 0 14px}
@@ -435,6 +436,8 @@ SECTIONS = [
     ("plan-4.html", "4 | Early Risks, Opportunities and Quick Wins",
      "Protect delivery now, and hold the bigger opportunities until the pipeline is complete", section4),
     ("plan-5.html", "5 | My Leadership Approach", "Support the people delivering the work, then improve it", section5),
+    ("season.html", "Season, ROIC and Service Efficiency", "Supporting analysis: how the year shapes the timing of the plan",
+     lambda: season_section(lv, brief, [C_COMM, C_JUDG, C_SEQ])),
     ("qa.html", "Q&A Preparation", "The brief's four Q&A areas, with prepared answers", qa),
 ]
 
