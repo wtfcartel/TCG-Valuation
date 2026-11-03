@@ -78,3 +78,6 @@ input[type=file]::file-selector-button{padding:6px 14px;font-size:13px;margin-ri
 /* LogisticsDx wordmark (consulting copy under /c/) */
 .brandbar .ldx{font:800 28px/1 system-ui,"Segoe UI",Roboto,Arial,sans-serif;color:#0f3d5e;text-decoration:none;letter-spacing:-.02em}
 .brandbar .ldx b{color:#0194e1;font-weight:800}
+
+.brandbar img.ldxlogo{height:56px;width:auto}
+@media(max-width:800px){.brandbar img.ldxlogo{height:44px}}
