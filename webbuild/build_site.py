@@ -11,18 +11,34 @@ import shutil
 from pathlib import Path
 
 from common.report import OUTPUT, ROOT, page
+from webbuild import plan
 
 PUBLIC = ROOT / "public"
 SITE = ROOT / "webbuild"
 
-NAV = """<nav style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px;font-size:13px">
-<a href="/" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Overview</a>
-<a href="/reader.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Invoice reader — try it</a>
-<a href="/invoice-reader-batch.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Batch results</a>
-<a href="/project-control.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Margin early-warning</a>
-<a href="/plant-allocation.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Plant allocation</a>
-<a href="/power-bi.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Power BI feeds</a>
-</nav>"""
+NAV_GROUPS = [
+    ("90-day plan", [("index.html", "Overview"), ("plan-1.html", "1 · Get to know"), ("plan-2.html", "2 · Priorities"),
+                     ("plan-3.html", "3 · Partnering"), ("plan-4.html", "4 · Risks & quick wins"),
+                     ("plan-5.html", "5 · Leadership"), ("qa.html", "Q&A prep")]),
+    ("Prototypes", [("prototypes.html", "All"), ("reader.html", "Invoice reader"),
+                    ("invoice-reader-batch.html", "Batch results"), ("project-control.html", "Margin early-warning"),
+                    ("plant-allocation.html", "Plant allocation"), ("power-bi.html", "Power BI feeds")]),
+]
+
+NAV_CSS = """<style>.sitenav{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 10px;margin:-8px 0 12px;
+border-bottom:1px solid var(--line)}.sitenav .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:3px 0;font-size:13px}
+.sitenav .g{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);min-width:84px}
+.sitenav a{padding:3px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff}
+.sitenav a:hover{border-color:var(--green)}.sitenav a.on{background:var(--green);border-color:var(--green);color:#fff}
+@media(max-width:800px){.sitenav{position:static}.sitenav .g{min-width:100%}}</style>"""
+
+
+def nav_for(fname: str) -> str:
+    rows = "".join(
+        f"<div class='row'><span class='g'>{g}</span>" + "".join(
+            f"<a href='/{u}'{' class=\'on\'' if u == fname else ''}>{t}</a>" for u, t in links) + "</div>"
+        for g, links in NAV_GROUPS)
+    return NAV_CSS + f"<nav class='sitenav' aria-label='Site'>{rows}</nav>"
 
 SAMPLES = [
     ("meridian_MSC-0042", "Consultant invoice — no GL, new supplier", "Needs approval"),
@@ -37,8 +53,8 @@ SAMPLES = [
 ]
 
 
-def with_nav(html: str) -> str:
-    return html.replace('<div class="wrap">', '<div class="wrap">' + NAV, 1)
+def with_nav(html: str, fname: str) -> str:
+    return html.replace('<div class="wrap">', '<div class="wrap">' + nav_for(fname), 1)
 
 
 def reader_page() -> str:
@@ -198,13 +214,15 @@ def main() -> None:
         shutil.rmtree(PUBLIC)
     (PUBLIC / "samples").mkdir(parents=True)
     (PUBLIC / "downloads").mkdir()
-    (PUBLIC / "index.html").write_text(with_nav(landing()), encoding="utf-8")
-    (PUBLIC / "reader.html").write_text(with_nav(reader_page()), encoding="utf-8")
-    (PUBLIC / "power-bi.html").write_text(with_nav(power_bi()), encoding="utf-8")
+    for fname, html in plan.pages(nav_for).items():
+        (PUBLIC / fname).write_text(html, encoding="utf-8")
+    (PUBLIC / "prototypes.html").write_text(with_nav(landing(), "prototypes.html"), encoding="utf-8")
+    (PUBLIC / "reader.html").write_text(with_nav(reader_page(), "reader.html"), encoding="utf-8")
+    (PUBLIC / "power-bi.html").write_text(with_nav(power_bi(), "power-bi.html"), encoding="utf-8")
     for src, dst in ((OUTPUT / "invoice_reader" / "invoice_reader.html", "invoice-reader-batch.html"),
                      (OUTPUT / "project_control.html", "project-control.html"),
                      (OUTPUT / "plant_allocation.html", "plant-allocation.html")):
-        (PUBLIC / dst).write_text(with_nav(src.read_text(encoding="utf-8")), encoding="utf-8")
+        (PUBLIC / dst).write_text(with_nav(src.read_text(encoding="utf-8"), dst), encoding="utf-8")
     for f in (SITE / "samples").glob("*.jpg"):
         shutil.copy(f, PUBLIC / "samples" / f.name)
     for f in ("ap_review_batch.xlsx", "xero_bills_import.csv"):

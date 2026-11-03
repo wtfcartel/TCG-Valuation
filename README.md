@@ -19,6 +19,7 @@ production applications in `wtfcartel/Trial-1-Cartel-v1` and `wtfcartel/TCG-Valu
 | `output/` | Generated pages, workbook, Xero CSV, draft emails, JSON, test results and run log |
 | `screenshots/` | Captured pages, plus cropped versions used in the executive pack |
 | `tests/test_demos.py` | 17 tests covering the calculations and controls |
+| `webbuild/plan.py` | The 90-day plan pages (content lives here; edit and rebuild) |
 | `api/`, `public/`, `webbuild/`, `vercel.json` | The Vercel deployment: Python functions, static site, and its build script |
 
 The executive pack (Deliverable 3) and the presentation notes and implementation assessment (Deliverables 4 and 5,
@@ -27,10 +28,14 @@ plus the wider streamlining options) are Claude Docs, linked from the conversati
 ## Live deployment (Vercel)
 
 `public/` is the static site and `api/*.py` are standard-library Python functions, so Vercel needs no build or install
-step (`vercel.json`). Pages:
+step (`vercel.json`). Every page carries a two-row navigation bar: **90-day plan** and **Prototypes**.
 
 | Path | What it does |
 |---|---|
+| `/` (`index.html`) | **"My First 90 Days" presentation**: overview, timeline, agenda and day-90 scorecard |
+| `/plan-1.html` … `/plan-5.html` | One page per area of the final-round brief; ← → keys move between them, so the site can be presented directly |
+| `/qa.html` | Q&A preparation: likely questions grouped by what the panel said it would explore |
+| `/prototypes.html` | Index of the working prototypes |
 | `/reader.html` | Live reader: pick a sample scan or upload an image; OCR runs in the browser (tesseract.js, 3 layout passes), then `/api/read` validates, suggests the GL and drafts the approval email |
 | `/api/read` | `POST {text, filename?, ocrConfidence?}` → extracted fields, checks, GL candidates, routing, draft email |
 | `/api/powerbi?table=…&format=csv\|json` | Live tables for Power BI Desktop / Excel (Get Data → Web): projects, exceptions, margin_history, debtor_ageing, ap_queue, plant_plan, plant_fleet, plant_actions |
