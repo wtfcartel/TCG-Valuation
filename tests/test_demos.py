@@ -146,3 +146,9 @@ def test_abn_reconciled_only_when_close_to_supplier_master():
     far = R.process_text(base.format(abn="11 111 595 711"), ref=ref)    # too different to trust
     assert near.ext.abn == "49 624 595 711" and near.status == "READY"
     assert far.status == "EXCEPTION"
+
+
+def test_abn_read_through_ocr_punctuation():
+    assert R.extract("Acme\nABN 49 624:595.711 Invoice Date: 27/10/2026").abn == "49 624 595 711"
+    assert R.extract("Acme\nABN14.281 152/836 Invoice Date").abn == "14 281 152 836"
+    assert R.extract("Acme\nABN 14.281 152 89 Invoice").abn is None  # only 10 digits: not guessed

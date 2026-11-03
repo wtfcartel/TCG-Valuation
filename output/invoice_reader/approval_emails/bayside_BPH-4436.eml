@@ -1,14 +1,14 @@
 From: ap-automation@greenturf-demo.example
 To: Sam Ortiz <pm.p101@greenturf-demo.example>
 Cc: Jo Park <accounts.lead@greenturf-demo.example>
-Date: Tue, 03 Nov 2026 13:29:33 +1100
+Date: Tue, 03 Nov 2026 13:38:55 +1100
 X-Draft-Status: DRAFT - NOT SENT (demonstration)
 Subject:
  [Approval needed] Bayside Plant Hire BPH-4436 $19,030.00 - Purchase order
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="===============5589892227475665399=="
+Content-Type: multipart/mixed; boundary="===============7333776512610151737=="
 
---===============5589892227475665399==
+--===============7333776512610151737==
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
@@ -35,7 +35,7 @@ the AP reader and has not been sent.
 
 (Synthetic demonstration data.)
 
---===============5589892227475665399==
+--===============7333776512610151737==
 Content-Type: image/jpeg
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="bayside_BPH-4436.jpg"
@@ -2210,4 +2210,4 @@ IOCPzFOpCcds0tFFFFFFFNljEsTxsWCupUlWKnB9COQfcU6iikBBzg9OtLRRRRRTXYqjMFLkAkKu
 Mn2GeKdRRRRRRRRRRRRRTSJPNUhl8vady7eSeMEHPA68Y5yOmOXUUUUUUUUUUUUUUUUUUUUUUhIA
 JJwB1JpaK//Z
 
---===============5589892227475665399==--
+--===============7333776512610151737==--

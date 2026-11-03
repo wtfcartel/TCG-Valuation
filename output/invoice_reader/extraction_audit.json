@@ -84,7 +84,7 @@
     ],
     "related": [],
     "remittance_matches": [],
-    "seconds": 0.432
+    "seconds": 0.42
   },
   {
     "document": "bayside_BPH-4436.jpg",
@@ -188,7 +188,7 @@
     ],
     "related": [],
     "remittance_matches": [],
-    "seconds": 3.874
+    "seconds": 3.797
   },
   {
     "document": "council_remittance.eml",
@@ -281,7 +281,7 @@
         "age_days": 78
       }
     ],
-    "seconds": 2.85
+    "seconds": 2.807
   },
   {
     "document": "greenline_GIS-3307.eml",
@@ -368,7 +368,7 @@
     ],
     "related": [],
     "remittance_matches": [],
-    "seconds": 0.025
+    "seconds": 0.023
   },
   {
     "document": "kerrigan_KQ-5520.eml",
@@ -453,7 +453,7 @@
     "issues": [],
     "related": [],
     "remittance_matches": [],
-    "seconds": 0.026
+    "seconds": 0.022
   },
   {
     "document": "meridian_MSC-0042.jpg",
@@ -560,7 +560,7 @@
       "May relate to pending variation V-101-2 \"Unsuitable subgrade removal and replacement\" \u2014 confirm whether this cost is recoverable from the client"
     ],
     "remittance_matches": [],
-    "seconds": 4.166
+    "seconds": 3.97
   },
   {
     "document": "pitchline_PSS-20915.eml",
@@ -645,7 +645,7 @@
     "issues": [],
     "related": [],
     "remittance_matches": [],
-    "seconds": 0.054
+    "seconds": 0.027
   },
   {
     "document": "southway_SF-77812.jpg",
@@ -740,7 +740,7 @@
     "issues": [],
     "related": [],
     "remittance_matches": [],
-    "seconds": 3.986
+    "seconds": 3.771
   },
   {
     "document": "torque_TH-1187.jpg",
@@ -837,6 +837,6 @@
       "Asset reference read as BX20-01 \u2192 matched to plant register EX20-01; cost will be tracked against the machine"
     ],
     "remittance_matches": [],
-    "seconds": 4.029
+    "seconds": 3.932
   }
 ]

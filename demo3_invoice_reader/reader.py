@@ -187,8 +187,10 @@ def extract(text: str) -> Extracted:
     first = re.sub(r"\bTAX INVOICE\b", "", first, flags=re.I)
     m = re.search(r"[A-Z][A-Za-z&']+(?:\s+[A-Z][A-Za-z&']+)*", first)
     e.supplier_text = m.group(0) if m else first.strip()
-    m = re.search(r"ABN[:\s]*((?:\d\s*){11})", text)
-    e.abn = (lambda s: f"{s[:2]} {s[2:5]} {s[5:8]} {s[8:]}")(re.sub(r"\D", "", m.group(1))) if m else None
+    # OCR often puts stray punctuation inside the number ("49 624:595.711"); take the first 11 digits after "ABN".
+    m = re.search(r"ABN\s*[:#]?\s*([\d\s.:,/'#]{11,24})", text)
+    digits = re.sub(r"\D", "", m.group(1)) if m else ""
+    e.abn = f"{digits[:2]} {digits[2:5]} {digits[5:8]} {digits[8:11]}" if len(digits) >= 11 else None
     e.invoice_number = _doc_no(r"Invoice\s*No", text)
     e.invoice_date, e.due_date = _date(r"Invoice\s*Date", text), _date(r"Due\s*Date", text)
     m = re.search(r"PO\s*Number[:\s]*PO\s*[-:.\s]?\s*(\d{4})", text, re.I)
