@@ -33,8 +33,10 @@ export async function valid(cookieHeader, secret, now = Date.now()) {
 export default async function middleware(request) {
   const secret = process.env.SESSION_SECRET;
   const url = new URL(request.url);
-  // demo.logisticsdx.com opens the consulting-engagement copy of the site (public/c/)
-  const home = url.hostname.startsWith('demo.') && (url.pathname === '/' || url.pathname === '/index.html') ? '/c/index.html' : null;
+  // demo.logisticsdx.com and greenturf.logisticsdx.com open the consulting-engagement copy (public/c/).
+  // The original 90-day version stays at the root of any other address (e.g. tcg-valuation-api.vercel.app).
+  const consulting = /^(demo|greenturf)\./.test(url.hostname);
+  const home = consulting && (url.pathname === '/' || url.pathname === '/index.html') ? '/c/index.html' : null;
   if (await valid(request.headers.get('cookie'), secret)) {
     return home ? Response.redirect(new URL(home, request.url), 302) : undefined;   // signed in: carry on to the page
   }
