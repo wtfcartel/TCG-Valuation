@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from common.report import CSS, esc
 from webbuild.season import section as season_section
+from webbuild.integrations import section as integrations_section
 from webbuild.review import build as review_page
 
 PLAN_CSS = """
@@ -409,6 +410,8 @@ SECTIONS = [
      lambda: season_section(lv)),
     ("assumptions.html", "Assumptions and What Would Change the Plan",
      "What the plan rests on, how I'd test it, and how I'd adapt", assumptions),
+    ("integrations.html", "Integrations", "Systems this can connect to, with their published APIs and GitHub SDKs",
+     integrations_section),
 ]
 
 KEYS = """<script>
