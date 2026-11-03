@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from common.report import CSS, esc
 from webbuild.season import section as season_section
+from webbuild.review import build as review_page
 
 PLAN_CSS = """
 .lede{font-size:16px;max-width:840px;margin:0 0 14px}
@@ -124,8 +125,9 @@ def overview() -> str:
     ]
     rows = "".join(f"<tr><td><a href='/{u}'>{esc(t)}</a></td><td class='n'>{m}</td></tr>" for u, t, m in agenda)
     return f"""
-<p class="lede">Green Turf has an existing pipeline of mandates it has already committed to. My first 90 days would be
-about helping the team deliver that pipeline well, without dramatic change. Improvements come in small steps and only
+<p class="lede">The role is about growth, compliance and governance, and modernisation that push through the existing
+mandate and are additive to future strategy once the current strategic plan is executed. My first 90 days would be about
+helping the team deliver the existing pipeline of mandates well, without dramatic change. Improvements come in small steps and only
 where they help delivery. Anything bigger gets prepared as options for Mick and Dean to consider once the pipeline is
 complete.</p>
 <div class="say">Deliver what's already been promised, protect its margin and cash, and only then look at what should
@@ -392,7 +394,8 @@ and time it outside peak</li></ul>"""
 
 
 SECTIONS = [
-    ("index.html", "Green Turf | My First 90 Days", "Business Operations Director | final-round presentation", overview),
+    ("index.html", "Green Turf | My First 90 Days", "Business Operations Director | final-round presentation", review_page),
+    ("approach.html", "My Approach to the First 90 Days", "How the plan is sequenced, and the 90 days at a glance", overview),
     ("plan-1.html", "1 | How I Would Get to Know the Business", "Learning the business through the committed pipeline",
      section1),
     ("plan-2.html", "2 | My Priorities for the First 90 Days",

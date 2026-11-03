@@ -17,7 +17,7 @@ PUBLIC = ROOT / "public"
 SITE = ROOT / "webbuild"
 
 NAV_GROUPS = [
-    ("First 90 days", [("index.html", "Overview"), ("plan-1.html", "1 · Get to know"), ("plan-2.html", "2 · Priorities"),
+    ("First 90 days", [("index.html", "One-page review"), ("approach.html", "Approach"), ("plan-1.html", "1 · Get to know"), ("plan-2.html", "2 · Priorities"),
                      ("plan-3.html", "3 · Partnering"), ("plan-4.html", "4 · Risks & quick wins"),
                      ("plan-5.html", "5 · Leadership"), ("season.html", "Timing across the season"),
                      ("assumptions.html", "Assumptions")]),
