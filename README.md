@@ -21,6 +21,7 @@ production applications in `wtfcartel/Trial-1-Cartel-v1` and `wtfcartel/TCG-Valu
 | `tests/test_demos.py` | 17 tests covering the calculations and controls |
 | `demo4_seasonality/`, `data/seasonality/` | Season model: ROIC per unit and service efficiency by month (also feeds `season_*` Power BI tables) |
 | `webbuild/brand.css`, `webbuild/vendor/` | Look and feel: Pico CSS v2.0.6 (MIT, github.com/picocss/pico) with a Green Turf brand layer |
+| `demo5_cashflow/`, `data/cashflow/` | 13-week cash forecast (invoicing promptly vs late), 12-month seasonal cash view, and customer payments including remittances matched by the invoice reader |
 | `webbuild/review.py`, `data/projects/customers.csv` | One-page review (Chart.js 4.4.4, MIT, in `webbuild/vendor/`) and the sample customer names behind the profitability tab |
 | `webbuild/plan.py` | The 90-day plan pages (content lives here; edit and rebuild) |
 | `api/`, `public/`, `webbuild/`, `vercel.json` | The Vercel deployment: Python functions, static site, and its build script |
@@ -35,7 +36,7 @@ step (`vercel.json`). Every page carries the plan navigation and the Green Turf 
 
 | Path | What it does |
 |---|---|
-| `/` (`index.html`) | **One-page review**: a Power BI-style report with six tabs (ROIC, customer profitability, pipeline delivery, service efficiency, cash and invoicing, plant and compliance), a season filter, and a Details link from each tab to its section |
+| `/` (`index.html`) | **One-page review**: a Power BI-style report with eight tabs (ROIC, customer profitability, pipeline delivery, cash flow, customer payments, invoice OCR, service efficiency, plant and compliance), a season filter, and a Details link from each tab to its section |
 | `/approach.html` | How the plan is sequenced (three levels), the 90 days at a glance, agenda and day-90 measures |
 | `/plan-1.html` … `/plan-5.html` | One page per area of the final-round brief; ← → keys move between them, so the site can be presented directly |
 | `/season.html` | Season, ROIC per unit and service efficiency by month (demonstrative season: slow Jan–Feb, heavy growth Mar–May, dead Jun–Jul, peak Aug–Nov) |

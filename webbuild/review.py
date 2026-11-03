@@ -5,6 +5,8 @@ One canvas, one main chart and a side panel per tab, with report page tabs along
   ROIC and service efficiency   demo4_seasonality
   customers, pipeline, cash     demo1_project_control (+ data/projects/customers.csv)
   plant and compliance          demo2_plant_allocation
+  cash flow, customer payments  demo5_cashflow (uses the remittances the invoice reader matched)
+  invoice OCR                   demo3_invoice_reader batch output (output/invoice_reader/extraction_audit.json)
 """
 
 from __future__ import annotations
@@ -17,6 +19,8 @@ from common.report import DATA, REPORT_DATE, esc
 from demo1_project_control.engine import run as run_projects
 from demo2_plant_allocation.engine import run as run_plant
 from demo4_seasonality.engine import run as run_season
+from demo5_cashflow.engine import run as run_cash
+from common.report import OUTPUT
 
 
 def _customers() -> dict[str, str]:
@@ -68,7 +72,18 @@ def data() -> dict:
               "contribution": f["contribution"], "breakdowns": f["breakdown_days"]} for f in plant["fleet"]]
     actions = [{"sev": a["severity"], "item": a["item"].replace(" — ", ": ", 1).replace(" — ", "; "), "owner": a["owner"],
                 "due": a["due"]} for a in plant["actions"]]
-    return {"months": months, "units": units, "unitAnnual": season["annual"], "jobs": jobs,
+    cf = run_cash()
+    audit = json.loads((OUTPUT / "invoice_reader" / "extraction_audit.json").read_text(encoding="utf-8"))
+    remit_customer = {r["remittance_doc"]: r["customer"] for r in cf["invoices"] if r["remittance_doc"]}
+    ocr = [{"doc": x["document"], "who": remit_customer.get(x["document"]) or x["fields"].get("supplier_text") or "", "kind": x["fields"].get("kind"),
+            "status": x["status"], "total": float(x["fields"]["total"]) if x["fields"].get("total") not in (None, "None", "") else 0.0,
+            "scanned": "OCR" in x["method"], "seconds": x.get("seconds") or 0,
+            "issues": [i.replace(" — ", ": ") for i in x["issues"]], "gl": x.get("suggested_gl") or "",
+            "conf": x.get("ocr_confidence")} for x in audit]
+    return {"months": months, "units": units, "unitAnnual": season["annual"], "jobs": jobs, "cash": {
+                "weeks": cf["weeks"], "monthly": cf["monthly"], "notInvoiced": cf["not_invoiced"], "opening": cf["opening"],
+                "lagWeeks": int(cf["assumptions"]["current_invoice_lag_weeks"])},
+            "pay": {"customers": cf["customers"], "invoices": cf["invoices"]}, "ocr": ocr,
             "customers": sorted(customers.values(), key=lambda c: -c["margin"]),
             "ageing": proj["portfolio"]["ageing"], "fleet": fleet, "actions": actions, "tickets": _tickets()}
 
@@ -83,12 +98,18 @@ TABS = [
     ("pipeline", "Pipeline delivery", "/plan-2.html",
      "Each committed job: what's been earned, what's still to deliver, and its status. Priority 1 is getting all of it "
      "over the line."),
+    ("cashflow", "Cash flow", "/plan-2.html",
+     "Cash over the next 13 weeks from the committed jobs, comparing invoicing milestones as they're completed with "
+     "invoicing a couple of weeks late. The 12-month view shows what the season does to cash."),
+    ("payments", "Customer payments", "/plan-4.html",
+     "What each customer has paid, what's been remitted and what's still owed. Remittances read by the invoice reader "
+     "are matched to the invoice they pay, so short payments show up straight away."),
+    ("ocr", "Invoice OCR", "/plan-4.html",
+     "Supplier invoices and customer remittances read by the OCR reader, then checked, coded and routed. It's a Level 3 "
+     "opportunity, shown here working on sample documents."),
     ("service", "Service efficiency", "/season.html",
      "Crew utilisation and on-time completion by month. Utilisation peaks just as on-time drops, because crews are "
      "stretched."),
-    ("cash", "Cash and invoicing", "/plan-4.html",
-     "Work done but not invoiced, and what's owed to us by age. Invoicing milestones as they're completed is a Level 2 "
-     "quick win."),
     ("plant", "Plant and compliance", "/plan-2.html",
      "Fleet utilisation and contribution, with the ticket, induction and servicing actions that keep live sites safe."),
 ]
@@ -185,6 +206,85 @@ const PAGES = {
       card('Delivered by value', pct(earned / total, 0), money(total - earned) + ' still to deliver') +
       `<table class="st"><tr><th>Job</th><th>Status</th></tr>${rows}</table>`;
   },
+  cashflow() {
+    const view = opt.cview || 'Next 13 weeks';
+    ctl(controls('cview', ['Next 13 weeks', '12 months'], view));
+    const C = D.cash;
+    if (view === 'Next 13 weeks') {
+      const w = C.weeks;
+      draw({ type: 'line', data: { labels: w.map(x => x.label), datasets: [
+          { label: 'Invoice as milestones complete', data: w.map(x => x.balance_prompt), borderColor: BLUE, backgroundColor: BLUE, borderWidth: 2, pointRadius: 4, tension: 0 },
+          { label: 'Invoice ' + C.lagWeeks + ' weeks late', data: w.map(x => x.balance_current), borderColor: ORANGE, backgroundColor: ORANGE, borderWidth: 2, pointRadius: 4, tension: 0 }] },
+        options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { position: 'top', align: 'end' }, tooltip: { callbacks: {
+            title: i => 'Week of ' + w[i[0].dataIndex].label + (w[i[0].dataIndex].shutdown ? ' (Christmas shutdown)' : ''),
+            label: i => ' ' + i.dataset.label + ': ' + money(i.raw),
+            afterBody: i => { const x = w[i[0].dataIndex]; return ['Payments ' + money(x.payments)]; } } } },
+          scales: { y: { ...moneyAxis(), beginAtZero: false, grid: { color: c => c.tick.value === 0 ? '#605e5c' : '#edebe9' } }, x: noGrid } } });
+      const lp = w.reduce((a, x) => x.balance_prompt < a.balance_prompt ? x : a, w[0]);
+      const lc = w.reduce((a, x) => x.balance_current < a.balance_current ? x : a, w[0]);
+      return card('Lowest balance, invoicing promptly', money(lp.balance_prompt), 'week of ' + lp.label) +
+        card('Lowest balance, invoicing ' + C.lagWeeks + ' weeks late', money(lc.balance_current), 'week of ' + lc.label) +
+        card('Work done, not yet invoiced', money(C.notInvoiced), 'to bill this week') +
+        `<p class="fn">Opening balance ${money(C.opening)}. Receipts on each customer's terms; wages paid in the week, suppliers a month later; no site work over the Christmas shutdown. All assumptions are illustrative.</p>`;
+    }
+    const m = C.monthly;
+    draw({ type: 'bar', data: { labels: m.map(x => x.month), datasets: [
+        { type: 'bar', label: 'Net cash for the month', data: m.map(x => x.net), backgroundColor: m.map(x => x.net < 0 ? RED : BLUE), borderRadius: 4, maxBarThickness: 40, order: 2 },
+        { type: 'line', label: 'Bank balance', data: m.map(x => x.balance), borderColor: ORANGE, backgroundColor: ORANGE, borderWidth: 2, pointRadius: 3, tension: 0, order: 1 }] },
+      options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top', align: 'end', labels: { generateLabels: ch =>
+            Chart.defaults.plugins.legend.labels.generateLabels(ch).map(l => l.text.startsWith('Net') ? { ...l, fillStyle: BLUE, strokeStyle: BLUE } : l) } },
+          tooltip: { callbacks: {
+          title: i => m[i[0].dataIndex].month + ' | ' + m[i[0].dataIndex].season, label: i => ' ' + i.dataset.label + ': ' + money(i.raw),
+          afterBody: i => { const x = m[i[0].dataIndex]; return ['In ' + money(x.cash_in) + ' | out ' + money(x.cash_out)]; } } } },
+        scales: { y: { ...moneyAxis(), beginAtZero: true }, x: noGrid } } });
+    const worst = m.reduce((a, x) => x.net < a.net ? x : a, m[0]);
+    return card('Tightest month', worst.month, money(worst.net) + ' net: crews ramp up before peak receipts arrive') +
+      card('Dead months', money(m.filter(x => x.season === 'Dead').reduce((a, x) => a + x.net, 0)), 'net across June and July: June still collects May\'s work, July turns negative') +
+      `<p class="fn">Revenue collected a month after it's earned; costs paid half in the month and half the month after. This is why the cash plan for August needs to be set in May.</p>`;
+  },
+  payments() {
+    ctl('');
+    const c = D.pay.customers;
+    const ds = [['Paid', 'paid', BLUE], ['Remittance received', 'remitted', '#1baf7a'], ['Not yet due', 'not_due', '#b7d3f6'],
+      ['Short-paid or overdue', 'overdue', ORANGE]];
+    draw({ type: 'bar', data: { labels: c.map(x => x.customer), datasets: ds.map(([l, k, col]) => ({ label: l, data: c.map(x => x[k]),
+        backgroundColor: col, borderRadius: 3, stack: 's' })) },
+      options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end' },
+        tooltip: { callbacks: { label: i => ' ' + i.dataset.label + ': ' + money(i.raw),
+          afterBody: i => ['Invoiced ' + money(c[i[0].dataIndex].invoiced)] } } },
+        scales: { x: { ...moneyAxis(), stacked: true }, y: { ...noGrid, stacked: true } } } });
+    const inv = D.pay.invoices, tot = c.reduce((a, x) => a + x.invoiced, 0);
+    const got = c.reduce((a, x) => a + x.paid + x.remitted, 0), owed = c.reduce((a, x) => a + x.not_due + x.overdue, 0);
+    const map = { 'Remittance received': ['GREEN', 'Remitted'], 'Short-paid': ['RED', 'Short-paid'], 'Overdue': ['AMBER', 'Overdue'], 'Not yet due': ['NOT REPORTED', 'Not due'] };
+    const rows = inv.filter(x => x.status !== 'Paid').map(x => `<tr><td>${esc(x.invoice)}<br><small>${esc(x.customer)}</small></td>
+      <td class="n">${money(x.status === 'Remittance received' ? x.remitted : x.outstanding)}</td><td>${chip(...map[x.status])}</td></tr>`).join('');
+    return card('Collected or remitted', pct(got / tot, 0), money(got) + ' of ' + money(tot) + ' invoiced') +
+      card('Still owed', money(owed), 'including short payments') +
+      `<table class="st"><tr><th>Open invoice</th><th class="n">Amount</th><th>Status</th></tr>${rows}</table>
+       <p class="fn">Remittances from Eastvale College and Northfield City Council were read by the invoice reader and matched to INV-5524 and INV-5530.</p>`;
+  },
+  ocr() {
+    ctl(`<a class="btnlink" href="/reader.html">Try the live reader ↗</a>`);
+    const o = D.ocr, outcomes = ['READY', 'NEEDS APPROVAL', 'EXCEPTION'];
+    const label = { 'READY': 'Ready to post', 'NEEDS APPROVAL': 'Needs approval', 'EXCEPTION': 'Held: exception' };
+    const count = (st, sc) => o.filter(x => x.status === st && x.scanned === sc).length;
+    draw({ type: 'bar', data: { labels: outcomes.map(x => label[x]), datasets: [
+        { label: 'Scanned image (OCR)', data: outcomes.map(st => count(st, true)), backgroundColor: BLUE, borderRadius: 3, stack: 's' },
+        { label: 'Emailed PDF or text', data: outcomes.map(st => count(st, false)), backgroundColor: '#1baf7a', borderRadius: 3, stack: 's' }] },
+      options: { maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end' }, tooltip: { callbacks: {
+          label: i => ' ' + i.dataset.label + ': ' + i.raw + ' document' + (i.raw === 1 ? '' : 's'),
+          afterBody: i => o.filter(x => x.status === outcomes[i[0].dataIndex]).map(x => '• ' + x.who + ' ' + (x.total ? money(x.total) : '')) } } },
+        scales: { y: { ...noGrid, beginAtZero: true, ticks: { stepSize: 1 }, stacked: true, grid: { color: '#edebe9' } }, x: { ...noGrid, stacked: true } } } });
+    const secs = o.reduce((a, x) => a + x.seconds, 0);
+    const held = o.filter(x => x.kind === 'invoice' && x.status !== 'READY').reduce((a, x) => a + x.total, 0);
+    const caught = o.filter(x => x.status !== 'READY').map(x => `<li>${chip(x.status === 'EXCEPTION' ? 'RED' : 'AMBER', x.status === 'EXCEPTION' ? 'Held' : 'Approve')}
+      <span><b>${esc(x.who)}</b>: ${esc(x.issues[0] || '')}</span></li>`).join('');
+    return card('Documents read', String(o.length), secs.toFixed(1) + ' seconds for the batch') +
+      card('Supplier invoices held for review', money(held), 'until someone approves them') +
+      `<ul class="acts">${caught}</ul><p class="fn">Each document is checked for ABN, GST, purchase order, duplicates and GL account before anything reaches Xero.</p>`;
+  },
   service() {
     ctl('');
     const src = D.months.filter(inSeason);
@@ -201,27 +301,6 @@ const PAGES = {
       card('On-time completion', pct(avg('ot'), 0), season || 'full year') +
       card('Lowest on-time', worst.m, pct(worst.ot, 0) + ' of jobs on time') +
       `<p class="fn">Utilisation is the billable share of paid crew hours. Use the season filter to compare peak with the quiet months.</p>`;
-  },
-  cash() {
-    const view = opt.view || 'Not yet invoiced';
-    ctl(controls('view', ['Not yet invoiced', 'Debtor ageing'], view));
-    const j = D.jobs.filter(x => x.not_invoiced > 0).sort((a, b) => b.not_invoiced - a.not_invoiced);
-    const age = Object.entries(D.ageing);
-    if (view === 'Not yet invoiced') {
-      draw({ type: 'bar', data: { labels: j.map(x => x.job), datasets: [{ label: 'Work done, not invoiced', data: j.map(x => x.not_invoiced),
-          backgroundColor: BLUE, borderRadius: 4, maxBarThickness: 40 }] },
-        options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false },
-          tooltip: { callbacks: { label: i => ' Not invoiced: ' + money(i.raw) } } }, scales: { x: moneyAxis(), y: noGrid } } });
-    } else {
-      draw({ type: 'bar', data: { labels: age.map(a => a[0] + ' days'), datasets: [{ label: 'Owed to us', data: age.map(a => a[1]),
-          backgroundColor: age.map((a, i) => i < 2 ? BLUE : ORANGE), borderRadius: 4, maxBarThickness: 70 }] },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: false },
-          tooltip: { callbacks: { label: i => ' Owed: ' + money(i.raw) } } }, scales: { y: moneyAxis(), x: noGrid } } });
-    }
-    const ni = D.jobs.reduce((a, x) => a + x.not_invoiced, 0), owed = age.reduce((a, x) => a + x[1], 0);
-    const over60 = age.filter(a => ['61-90', '90+'].includes(a[0])).reduce((a, x) => a + x[1], 0);
-    return card('Work done, not invoiced', money(ni), j.length + ' jobs') + card('Owed to us', money(owed), 'invoices issued, unpaid') +
-      card('Over 60 days', money(over60), over60 ? 'to chase this week' : 'nothing overdue');
   },
   plant() {
     const view = opt.pview || 'Utilisation';
@@ -255,11 +334,12 @@ function render() {
 document.querySelector('.tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { tab = b.dataset.tab; render(); } });
 document.querySelector('.slicer').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { season = b.dataset.s; render(); } });
 document.getElementById('report').addEventListener('click', e => {
-  const b = e.target.closest('[data-unit],[data-mode],[data-view],[data-pview]'); if (!b) return;
+  const b = e.target.closest('[data-unit],[data-mode],[data-view],[data-pview],[data-cview]'); if (!b) return;
   if (b.dataset.unit) opt.unit = b.dataset.unit;
   if (b.dataset.mode) opt.mode = b.dataset.mode;
   if (b.dataset.view) opt.view = b.dataset.view;
   if (b.dataset.pview) opt.pview = b.dataset.pview;
+  if (b.dataset.cview) opt.cview = b.dataset.cview;
   render();
 });
 render();
@@ -336,6 +416,8 @@ CSS = """
 .acts{list-style:none;padding:0;margin:4px 0 0}.acts li{display:flex;gap:8px;align-items:flex-start;font-size:12px;padding:5px 0;
   border-bottom:1px solid #f0f0ee;margin:0}.acts li>span:not(.chip){flex:1}.acts .chip{flex:none}
 .fn{font-size:11.5px;color:#605e5c;margin:8px 0 0}
+.btnlink{font-size:12px;padding:4px 12px;border-radius:4px;background:#0f5f2b;color:#fff;text-decoration:none}
+.btnlink:hover{background:#14813a}.st small{color:#605e5c}
 .tabs{display:flex;gap:2px;flex-wrap:wrap;background:#e8e6e4;border-top:1px solid #d2d0ce;padding:4px 8px 0}
 .tabs button{font-size:12.5px;padding:7px 14px;color:#252423;border-bottom:3px solid transparent;border-radius:4px 4px 0 0}
 .tabs button:hover{background:#f3f2f1}.tabs button.on{border-bottom-color:#1fb43e;font-weight:600;background:#fff}
