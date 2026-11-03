@@ -29,6 +29,20 @@ production applications in `wtfcartel/Trial-1-Cartel-v1` and `wtfcartel/TCG-Valu
 The executive pack (Deliverable 3) and the presentation notes and implementation assessment (Deliverables 4 and 5,
 plus the wider streamlining options) are Claude Docs, linked from the conversation.
 
+## Sign-in
+
+Every page and API call is checked on the server by `middleware.js` (Vercel Routing Middleware) before it loads. Only
+`/login.html` and its logo and styles are public. `/api/login` checks the username and password against three Vercel
+environment variables and issues a signed session cookie (HMAC-SHA256, 8 hours); `/api/logout` clears it.
+
+| Variable | What to set |
+|---|---|
+| `SITE_USERNAME` | The username to sign in with |
+| `SITE_PASSWORD` | The password |
+| `SESSION_SECRET` | A long random string used to sign the session cookie |
+
+If `SESSION_SECRET` is missing, nothing is served and the login page says sign-in isn't set up (it fails closed).
+
 ## Live deployment (Vercel)
 
 `public/` is the static site and `api/*.py` are standard-library Python functions, so Vercel needs no build or install

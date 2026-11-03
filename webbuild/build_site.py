@@ -12,6 +12,7 @@ from pathlib import Path
 
 from common.report import OUTPUT, ROOT, page
 from webbuild import plan
+from webbuild.login import page as login_page
 
 PUBLIC = ROOT / "public"
 SITE = ROOT / "webbuild"
@@ -41,7 +42,7 @@ def nav_for(fname: str) -> str:
 
 BRANDBAR = """<div class="brandbar"><a href="/index.html" aria-label="Back to the 90-day plan"><img
 src="/brand/greenturf-logo.jpg" alt="Green Turf" width="174" height="52"></a><div class="by">Prepared for Green Turf by
-<b>James Fischer-Myall</b><br>Business Operations Director, final round</div></div>"""
+<b>James Fischer-Myall</b><br>Business Operations Director, final round · <a href="/api/logout">Sign out</a></div></div>"""
 
 
 def theme(html: str) -> str:
@@ -250,6 +251,7 @@ def main() -> None:
     shutil.copy(SITE / "brand.css", PUBLIC / "brand.css")
     for page_file in PUBLIC.glob("*.html"):
         page_file.write_text(theme(page_file.read_text(encoding="utf-8")), encoding="utf-8")
+    (PUBLIC / "login.html").write_text(login_page(), encoding="utf-8")
     print("Site written to", PUBLIC, "-", sum(1 for _ in PUBLIC.rglob("*") if _.is_file()), "files")
 
 
