@@ -244,7 +244,7 @@ def main() -> None:
         shutil.copy(OUTPUT / "invoice_reader" / f, PUBLIC / "downloads" / f)
     (PUBLIC / "vendor").mkdir()
     (PUBLIC / "brand").mkdir()
-    for f in ("pico.green.min.css", "PICO-LICENSE.md"):
+    for f in ("pico.green.min.css", "PICO-LICENSE.md", "chart.umd.min.js", "CHARTJS-LICENSE.md"):
         shutil.copy(SITE / "vendor" / f, PUBLIC / "vendor" / f)
     shutil.copy(SITE / "brand" / "greenturf-logo.jpg", PUBLIC / "brand" / "greenturf-logo.jpg")
     shutil.copy(SITE / "brand.css", PUBLIC / "brand.css")
