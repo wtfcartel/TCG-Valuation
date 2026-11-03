@@ -81,3 +81,8 @@ input[type=file]::file-selector-button{padding:6px 14px;font-size:13px;margin-ri
 
 .brandbar img.ldxlogo{height:56px;width:auto}
 @media(max-width:800px){.brandbar img.ldxlogo{height:44px}}
+
+/* Single-line menu: no group label, compact pills */
+.sitenav .g{display:none}
+.sitenav .row{flex-wrap:wrap;gap:4px}
+.sitenav a{padding:4px 9px;font-size:12.5px;white-space:nowrap}
