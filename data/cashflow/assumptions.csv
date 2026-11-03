@@ -1,0 +1,13 @@
+key,value,note
+opening_cash,450000,Bank balance at the start of the forecast (illustrative)
+overhead_per_week,32000,Office wages rent insurance and vehicles not charged to jobs
+labour_share,0.45,Share of job cost that is wages paid in the week the work is done
+supplier_terms_weeks,4,Suppliers and subcontractors paid about 30 days after the work
+current_invoice_lag_weeks,2,Current practice: work invoiced about two weeks after month end
+disputed_settle_weeks,4,Weeks to resolve a short payment
+terms_Council,30,Customer payment terms in days
+terms_School,30,
+terms_Developer,45,
+terms_Club,30,
+shutdown_start,2026-12-21,Christmas shutdown: no site work
+shutdown_end,2027-01-10,

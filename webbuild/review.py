@@ -1,0 +1,519 @@
+"""One-page review: the front page, laid out like a Power BI report.
+
+One canvas, one main chart and a side panel per tab, with report page tabs along the bottom. Charts use Chart.js
+(MIT, vendored). Every figure comes from the same engines as the detail pages, so the two always agree:
+  ROIC and service efficiency   demo4_seasonality
+  customers, pipeline, cash     demo1_project_control (+ data/projects/customers.csv)
+  plant and compliance          demo2_plant_allocation
+  cash flow, customer payments  demo5_cashflow (uses the remittances the invoice reader matched)
+  invoice OCR                   demo3_invoice_reader batch output (output/invoice_reader/extraction_audit.json)
+"""
+
+from __future__ import annotations
+
+import csv
+import json
+from datetime import date
+
+from common.report import DATA, REPORT_DATE, esc
+from demo1_project_control.engine import run as run_projects
+from demo2_plant_allocation.engine import run as run_plant
+from demo4_seasonality.engine import run as run_season
+from demo5_cashflow.engine import run as run_cash
+from common.report import OUTPUT
+
+
+def _customers() -> dict[str, str]:
+    with (DATA / "projects" / "customers.csv").open(newline="", encoding="utf-8") as f:
+        return {r["project_id"]: r["customer"] for r in csv.DictReader(f)}
+
+
+def _tickets() -> dict:
+    with (DATA / "plant" / "tickets.csv").open(newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    expired = sum(1 for r in rows if date.fromisoformat(r["expires"]) < REPORT_DATE)
+    soon = sum(1 for r in rows if 0 <= (date.fromisoformat(r["expires"]) - REPORT_DATE).days <= 30)
+    return {"total": len(rows), "expired": expired, "soon": soon}
+
+
+def data() -> dict:
+    season = run_season()
+    proj = run_projects()
+    plant = run_plant()
+    cust = _customers()
+
+    ic = {m: sum(x["invested_capital"] for x in season["monthly"] if x["month"] == m) for m in season["months"]}
+    months = [{"m": b["month"], "s": b["season"], "nopat": b["nopat"], "ic": ic[b["month"]], "rev": b["revenue"],
+               "util": b["utilisation"], "ot": b["on_time"]} for b in season["business"]]
+    units = {u: [{"m": x["month"], "s": x["season"], "nopat": x["nopat"], "ic": x["invested_capital"]}
+                 for x in season["monthly"] if x["unit"] == u] for u in season["units"]}
+
+    jobs = []
+    for r in proj["results"]:
+        margin_pct = r.quoted_margin if r.stale else r.forecast_margin
+        jobs.append({"id": r.p["project_id"], "job": r.p["name"], "customer": cust.get(r.p["project_id"], r.p["name"]),
+                     "type": r.p["client_type"], "value": r.revised_revenue, "complete": float(r.p["pct_complete"]),
+                     "quoted": r.quoted_margin, "margin_pct": margin_pct, "margin": r.revised_revenue * margin_pct,
+                     "stale": r.stale, "status": r.rag, "slip": r.slip_days, "not_invoiced": max(r.under_billed, 0)})
+    customers: dict[str, dict] = {}
+    for j in jobs:
+        c = customers.setdefault(j["customer"], {"customer": j["customer"], "type": j["type"], "value": 0.0,
+                                                  "margin": 0.0, "quoted_margin": 0.0, "jobs": 0, "stale": False})
+        c["value"] += j["value"]
+        c["margin"] += j["margin"]
+        c["quoted_margin"] += j["value"] * j["quoted"]
+        c["jobs"] += 1
+        c["stale"] = c["stale"] or j["stale"]
+    for c in customers.values():
+        c["margin_pct"] = c["margin"] / c["value"]
+        c["quoted_pct"] = c["quoted_margin"] / c["value"]
+
+    fleet = [{"asset": f["asset_id"], "desc": f["description"], "util": f["utilisation"],
+              "contribution": f["contribution"], "breakdowns": f["breakdown_days"]} for f in plant["fleet"]]
+    actions = [{"sev": a["severity"], "item": a["item"].replace(" — ", ": ", 1).replace(" — ", "; "), "owner": a["owner"],
+                "due": a["due"]} for a in plant["actions"]]
+    cf = run_cash()
+    audit = json.loads((OUTPUT / "invoice_reader" / "extraction_audit.json").read_text(encoding="utf-8"))
+    remit_customer = {r["remittance_doc"]: r["customer"] for r in cf["invoices"] if r["remittance_doc"]}
+    ocr = [{"doc": x["document"], "who": remit_customer.get(x["document"]) or x["fields"].get("supplier_text") or "", "kind": x["fields"].get("kind"),
+            "status": x["status"], "total": float(x["fields"]["total"]) if x["fields"].get("total") not in (None, "None", "") else 0.0,
+            "scanned": "OCR" in x["method"], "seconds": x.get("seconds") or 0,
+            "issues": [i.replace(" — ", ": ") for i in x["issues"]], "gl": x.get("suggested_gl") or "",
+            "conf": x.get("ocr_confidence")} for x in audit]
+    gl = gl_coding(audit)
+    return {"months": months, "units": units, "unitAnnual": season["annual"], "jobs": jobs, "gl": gl, "cash": {
+                "weeks": cf["weeks"], "monthly": cf["monthly"], "notInvoiced": cf["not_invoiced"], "opening": cf["opening"],
+                "lagWeeks": int(cf["assumptions"]["current_invoice_lag_weeks"])},
+            "pay": {"customers": cf["customers"], "invoices": cf["invoices"]}, "ocr": ocr,
+            "customers": sorted(customers.values(), key=lambda c: -c["margin"]),
+            "ageing": proj["portfolio"]["ageing"], "fleet": fleet, "actions": actions, "tickets": _tickets()}
+
+
+def gl_coding(audit: list[dict]) -> dict:
+    """GL suggestion for every supplier invoice the reader processed, tiered against the auto-coding threshold."""
+    from email import message_from_string
+    with (DATA / "finance" / "policy.csv").open(newline="", encoding="utf-8") as f:
+        threshold = float(next(r["value"] for r in csv.DictReader(f) if r["setting"] == "gl_confidence_auto"))
+    with (DATA / "finance" / "chart_of_accounts.csv").open(newline="", encoding="utf-8") as f:
+        coa = {r["code"]: r["name"] for r in csv.DictReader(f)}
+    drafts = OUTPUT / "invoice_reader" / "approval_emails"
+    rows = []
+    for x in audit:
+        fl = x["fields"]
+        if fl.get("kind") != "invoice":
+            continue
+        routed = cc = ""
+        mail = drafts / (x["document"].rsplit(".", 1)[0] + ".eml")
+        if mail.exists():
+            m = message_from_string(mail.read_text(encoding="utf-8"))
+            routed = (m["To"] or "").split("<")[0].strip()
+            cc = ", ".join(a.split("<")[0].strip() for a in (m["Cc"] or "").split(",") if a.strip())
+        cands = [{"code": c["code"], "name": coa.get(c["code"], c.get("name", "")), "score": round(c["score"], 2),
+                  "evidence": c["evidence"]} for c in x["gl_candidates"]]
+        conf = x["gl_confidence"] or 0
+        code = x["suggested_gl"] or ""
+        tier = "Exception" if not code else "Auto-coded" if conf >= 0.95 else "Auto-coded, spot-check"
+        rows.append({"doc": x["document"], "supplier": fl.get("supplier_text") or "", "invoice": fl.get("invoice_number") or "",
+                     "amount": float(fl["subtotal"]) if fl.get("subtotal") not in (None, "None", "") else 0.0,
+                     "code": code, "name": coa.get(code, ""), "conf": round(conf, 2), "tier": tier, "candidates": cands,
+                     "related": [r.replace(" — ", ": ") for r in x.get("related") or []], "routed": routed, "cc": cc,
+                     "no_po": fl.get("po_number") in (None, "", "None"),
+                     "new_supplier": any("new supplier" in i.lower() for i in x["issues"]),
+                     "status": x["status"]})
+    return {"threshold": threshold, "rows": rows}
+
+
+TABS = [
+    ("roic", "ROIC", "/season.html",
+     "Return on invested capital by month. Peak carries the year and the dead months run at a loss, which is why change "
+     "is timed for June and July, never for peak."),
+    ("customers", "Customer profitability", "/plan-3.html",
+     "Forecast margin by customer on the committed work. This is the conversation with Dean about which work we want "
+     "more of, by margin and fit."),
+    ("pipeline", "Pipeline delivery", "/plan-2.html",
+     "Each committed job: what's been earned, what's still to deliver, and its status. Priority 1 is getting all of it "
+     "over the line."),
+    ("cashflow", "Cash flow", "/plan-2.html",
+     "Cash over the next 13 weeks from the committed jobs, comparing invoicing milestones as they're completed with "
+     "invoicing a couple of weeks late. The 12-month view shows what the season does to cash."),
+    ("payments", "Customer payments", "/plan-4.html",
+     "What each customer has paid, what's been remitted and what's still owed. Remittances read by the invoice reader "
+     "are matched to the invoice they pay, so short payments show up straight away."),
+    ("ocr", "Invoice OCR", "/plan-4.html",
+     "Supplier invoices and customer remittances read by the OCR reader, then checked, coded and routed. It's a Level 3 "
+     "opportunity, shown here working on sample documents."),
+    ("gl", "GL coding", "/plan-4.html",
+     "The GL account the reader suggests for each supplier invoice, and how sure it is. Anything below the auto-coding "
+     "threshold goes on the exceptions report for someone to confirm before it reaches Xero."),
+    ("service", "Service efficiency", "/season.html",
+     "Crew utilisation and on-time completion by month. Utilisation peaks just as on-time drops, because crews are "
+     "stretched."),
+    ("plant", "Plant and compliance", "/plan-2.html",
+     "Fleet utilisation and contribution, with the ticket, induction and servicing actions that keep live sites safe."),
+]
+
+JS = r"""
+(() => {
+const D = __DATA__;
+const META = __META__;
+const BLUE = '#2a78d6', ORANGE = '#eb6834', RED = '#d03b3b', GREY = '#9aa39d', AMBER = '#e0a100', GREEN = '#0ca30c';
+const pct = (v, dp = 1) => (v * 100).toFixed(dp) + '%';
+const money = v => Math.abs(v) >= 1e6 ? '$' + (v / 1e6).toFixed(2) + 'm' : (v < 0 ? '−' : '') + '$' + Math.round(Math.abs(v) / 1000) + 'k';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
+const STATUS = {RED: ['At risk', '✕', RED], AMBER: ['Action needed', '!', AMBER], GREEN: ['On track', '✓', GREEN],
+  'NOT REPORTED': ['No cost data', '○', GREY]};
+const chip = (s, t) => { const [l, i, c] = STATUS[s] || STATUS.AMBER; return `<span class="chip" style="--c:${c}"><b>${i}</b>${esc(t || l)}</span>`; };
+const card = (l, v, s) => `<div class="kc"><span>${esc(l)}</span><b>${v}</b><small>${s || ''}</small></div>`;
+Chart.defaults.font.family = '"Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif';
+Chart.defaults.font.size = 12; Chart.defaults.color = '#605e5c';
+Chart.defaults.plugins.tooltip.backgroundColor = '#252423'; Chart.defaults.plugins.tooltip.padding = 9;
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+let chart = null, tab = 'roic', season = '';
+const opt = {};
+const pctAxis = (min, max) => ({ min, max, ticks: { callback: v => Math.round(v * 100) + '%' }, grid: { color: '#edebe9' } });
+const moneyAxis = () => ({ ticks: { callback: v => money(v) }, grid: { color: '#edebe9' }, beginAtZero: true });
+const noGrid = { grid: { display: false } };
+const inSeason = m => !season || m.s === season;
+const roicOf = rows => rows.reduce((a, r) => a + r.nopat, 0) * 12 / rows.length / (rows.reduce((a, r) => a + r.ic, 0) / rows.length);
+const draw = cfg => { if (chart) chart.destroy(); chart = new Chart(document.getElementById('chart'), cfg); };
+const ctl = html => { document.getElementById('vCtl').innerHTML = html; };
+const controls = (name, values, cur) => values.map(v => `<button type="button" data-${name}="${esc(v)}"${v === cur ? ' class="on"' : ''}>${esc(v)}</button>`).join('');
+
+const PAGES = {
+  roic() {
+    const unit = opt.unit || 'Whole business';
+    const src = (unit === 'Whole business' ? D.months : D.units[unit]).filter(inSeason);
+    const vals = src.map(m => m.nopat * 12 / m.ic);
+    ctl(controls('unit', ['Whole business', ...Object.keys(D.units)], unit));
+    draw({ type: 'bar', data: { labels: src.map(m => m.m), datasets: [{ label: 'ROIC (annualised)', data: vals,
+        backgroundColor: vals.map(v => v < 0 ? RED : BLUE), borderRadius: 4, maxBarThickness: 46 }] },
+      options: { maintainAspectRatio: false, plugins: { legend: { display: false },
+        tooltip: { callbacks: { title: i => src[i[0].dataIndex].m + ' | ' + src[i[0].dataIndex].s,
+          label: i => ' ROIC ' + pct(i.raw) + (i.raw < 0 ? ' (loss month)' : '') + ' | NOPAT ' + money(src[i.dataIndex].nopat) } } },
+        scales: { y: pctAxis(-0.4, 0.6), x: noGrid } } });
+    const loss = src.filter(m => m.nopat < 0).length;
+    const best = src.reduce((a, m) => (m.nopat / m.ic > a.nopat / a.ic ? m : a), src[0]);
+    const rows = D.unitAnnual.map(u => `<tr class="pick${u.unit === unit ? ' on' : ''}" data-unit="${esc(u.unit)}"><td>${esc(u.unit)}</td>
+      <td class="n">${pct(u.roic)}</td><td class="n">${u.loss_months}</td></tr>`).join('');
+    return card('ROIC | ' + (season || 'full year'), pct(roicOf(src)), esc(unit)) +
+      card('Best month', best.m, pct(best.nopat * 12 / best.ic) + ' annualised') +
+      card('Loss months', String(loss), 'in the selection') +
+      `<table class="st"><tr><th>Unit (full year)</th><th class="n">ROIC</th><th class="n">Loss mths</th></tr>${rows}</table>
+       <p class="fn">Click a unit to chart it.</p>`;
+  },
+  customers() {
+    const mode = opt.mode || 'Margin $';
+    const dollars = mode === 'Margin $';
+    const c = [...D.customers].sort((a, b) => dollars ? b.margin - a.margin : b.margin_pct - a.margin_pct);
+    ctl(controls('mode', ['Margin $', 'Margin %'], mode));
+    const ds = dollars
+      ? [{ label: 'Forecast margin', data: c.map(x => x.margin), backgroundColor: BLUE, borderRadius: 4 },
+         { label: 'Quoted margin', data: c.map(x => x.quoted_margin), backgroundColor: ORANGE, borderRadius: 4 }]
+      : [{ label: 'Forecast margin', data: c.map(x => x.margin_pct), backgroundColor: BLUE, borderRadius: 4 },
+         { label: 'Quoted margin', data: c.map(x => x.quoted_pct), backgroundColor: ORANGE, borderRadius: 4 }];
+    draw({ type: 'bar', data: { labels: c.map(x => x.customer), datasets: ds },
+      options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end' },
+        tooltip: { callbacks: { label: i => ' ' + i.dataset.label + ': ' + (dollars ? money(i.raw) : pct(i.raw)),
+          afterBody: i => { const x = c[i[0].dataIndex]; return [x.type + ' | ' + x.jobs + ' job' + (x.jobs > 1 ? 's' : '') +
+            ' | revenue ' + money(x.value)].concat(x.stale ? ['No current cost data: quoted margin shown'] : []); } } } },
+        scales: { x: dollars ? moneyAxis() : pctAxis(0, 0.3), y: noGrid } } });
+    const total = c.reduce((a, x) => a + x.margin, 0), rev = c.reduce((a, x) => a + x.value, 0);
+    const below = c.filter(x => x.margin_pct < x.quoted_pct - 0.001);
+    const rows = c.map(x => { const d = (x.margin_pct - x.quoted_pct) * 100; return `<tr><td>${esc(x.customer)}${x.stale ? ' *' : ''}</td>
+      <td class="n">${money(x.value)}</td><td class="n">${pct(x.margin_pct)}</td>
+      <td class="n ${d < -0.05 ? 'neg' : 'pos'}">${(d >= 0 ? '+' : '−') + Math.abs(d).toFixed(1)}</td></tr>`; }).join('');
+    return card('Forecast margin', money(total), pct(total / rev) + ' of ' + money(rev) + ' revenue') +
+      card('Below quoted margin', String(below.length), below.map(x => esc(x.customer)).join(', ') || 'none') +
+      `<table class="st"><tr><th>Customer</th><th class="n">Revenue</th><th class="n">Margin</th><th class="n">vs quote</th></tr>${rows}</table>
+       <p class="fn">* No current cost data, so the quoted margin is shown. "vs quote" is in percentage points.</p>`;
+  },
+  pipeline() {
+    ctl('');
+    const j = [...D.jobs].sort((a, b) => b.value - a.value);
+    draw({ type: 'bar', data: { labels: j.map(x => x.job), datasets: [
+        { label: 'Earned to date', data: j.map(x => x.value * x.complete), backgroundColor: BLUE, borderRadius: 4, stack: 's' },
+        { label: 'Still to deliver', data: j.map(x => x.value * (1 - x.complete)), backgroundColor: '#b7d3f6', borderRadius: 4, stack: 's' }] },
+      options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end' },
+        tooltip: { callbacks: { label: i => ' ' + i.dataset.label + ': ' + money(i.raw),
+          afterBody: i => { const x = j[i[0].dataIndex]; return [pct(x.complete, 0) + ' complete of ' + money(x.value),
+            (STATUS[x.status] || STATUS.AMBER)[0] + (x.slip ? ' | ' + x.slip + ' days behind' : '')]; } } } },
+        scales: { x: { ...moneyAxis(), stacked: true }, y: { ...noGrid, stacked: true } } } });
+    const total = j.reduce((a, x) => a + x.value, 0), earned = j.reduce((a, x) => a + x.value * x.complete, 0);
+    const rows = j.map(x => `<tr><td>${esc(x.job)}</td><td>${chip(x.status)}</td></tr>`).join('');
+    return card('Committed pipeline', money(total), j.length + ' jobs') +
+      card('Delivered by value', pct(earned / total, 0), money(total - earned) + ' still to deliver') +
+      `<table class="st"><tr><th>Job</th><th>Status</th></tr>${rows}</table>`;
+  },
+  cashflow() {
+    const view = opt.cview || 'Next 13 weeks';
+    ctl(controls('cview', ['Next 13 weeks', '12 months'], view));
+    const C = D.cash;
+    if (view === 'Next 13 weeks') {
+      const w = C.weeks;
+      draw({ type: 'line', data: { labels: w.map(x => x.label), datasets: [
+          { label: 'Invoice as milestones complete', data: w.map(x => x.balance_prompt), borderColor: BLUE, backgroundColor: BLUE, borderWidth: 2, pointRadius: 4, tension: 0 },
+          { label: 'Invoice ' + C.lagWeeks + ' weeks late', data: w.map(x => x.balance_current), borderColor: ORANGE, backgroundColor: ORANGE, borderWidth: 2, pointRadius: 4, tension: 0 }] },
+        options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { position: 'top', align: 'end' }, tooltip: { callbacks: {
+            title: i => 'Week of ' + w[i[0].dataIndex].label + (w[i[0].dataIndex].shutdown ? ' (Christmas shutdown)' : ''),
+            label: i => ' ' + i.dataset.label + ': ' + money(i.raw),
+            afterBody: i => { const x = w[i[0].dataIndex]; return ['Payments ' + money(x.payments)]; } } } },
+          scales: { y: { ...moneyAxis(), beginAtZero: false, grid: { color: c => c.tick.value === 0 ? '#605e5c' : '#edebe9' } }, x: noGrid } } });
+      const lp = w.reduce((a, x) => x.balance_prompt < a.balance_prompt ? x : a, w[0]);
+      const lc = w.reduce((a, x) => x.balance_current < a.balance_current ? x : a, w[0]);
+      return card('Lowest balance, invoicing promptly', money(lp.balance_prompt), 'week of ' + lp.label) +
+        card('Lowest balance, invoicing ' + C.lagWeeks + ' weeks late', money(lc.balance_current), 'week of ' + lc.label) +
+        card('Work done, not yet invoiced', money(C.notInvoiced), 'to bill this week') +
+        `<p class="fn">Opening balance ${money(C.opening)}. Receipts on each customer's terms; wages paid in the week, suppliers a month later; no site work over the Christmas shutdown. All assumptions are illustrative.</p>`;
+    }
+    const m = C.monthly;
+    draw({ type: 'bar', data: { labels: m.map(x => x.month), datasets: [
+        { type: 'bar', label: 'Net cash for the month', data: m.map(x => x.net), backgroundColor: m.map(x => x.net < 0 ? RED : BLUE), borderRadius: 4, maxBarThickness: 40, order: 2 },
+        { type: 'line', label: 'Bank balance', data: m.map(x => x.balance), borderColor: ORANGE, backgroundColor: ORANGE, borderWidth: 2, pointRadius: 3, tension: 0, order: 1 }] },
+      options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top', align: 'end', labels: { generateLabels: ch =>
+            Chart.defaults.plugins.legend.labels.generateLabels(ch).map(l => l.text.startsWith('Net') ? { ...l, fillStyle: BLUE, strokeStyle: BLUE } : l) } },
+          tooltip: { callbacks: {
+          title: i => m[i[0].dataIndex].month + ' | ' + m[i[0].dataIndex].season, label: i => ' ' + i.dataset.label + ': ' + money(i.raw),
+          afterBody: i => { const x = m[i[0].dataIndex]; return ['In ' + money(x.cash_in) + ' | out ' + money(x.cash_out)]; } } } },
+        scales: { y: { ...moneyAxis(), beginAtZero: true }, x: noGrid } } });
+    const worst = m.reduce((a, x) => x.net < a.net ? x : a, m[0]);
+    return card('Tightest month', worst.month, money(worst.net) + ' net: crews ramp up before peak receipts arrive') +
+      card('Dead months', money(m.filter(x => x.season === 'Dead').reduce((a, x) => a + x.net, 0)), 'net across June and July: June still collects May\'s work, July turns negative') +
+      `<p class="fn">Revenue collected a month after it's earned; costs paid half in the month and half the month after. This is why the cash plan for August needs to be set in May.</p>`;
+  },
+  payments() {
+    ctl('');
+    const c = D.pay.customers;
+    const ds = [['Paid', 'paid', BLUE], ['Remittance received', 'remitted', '#1baf7a'], ['Not yet due', 'not_due', '#b7d3f6'],
+      ['Short-paid or overdue', 'overdue', ORANGE]];
+    draw({ type: 'bar', data: { labels: c.map(x => x.customer), datasets: ds.map(([l, k, col]) => ({ label: l, data: c.map(x => x[k]),
+        backgroundColor: col, borderRadius: 3, stack: 's' })) },
+      options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end' },
+        tooltip: { callbacks: { label: i => ' ' + i.dataset.label + ': ' + money(i.raw),
+          afterBody: i => ['Invoiced ' + money(c[i[0].dataIndex].invoiced)] } } },
+        scales: { x: { ...moneyAxis(), stacked: true }, y: { ...noGrid, stacked: true } } } });
+    const inv = D.pay.invoices, tot = c.reduce((a, x) => a + x.invoiced, 0);
+    const got = c.reduce((a, x) => a + x.paid + x.remitted, 0), owed = c.reduce((a, x) => a + x.not_due + x.overdue, 0);
+    const map = { 'Remittance received': ['GREEN', 'Remitted'], 'Short-paid': ['RED', 'Short-paid'], 'Overdue': ['AMBER', 'Overdue'], 'Not yet due': ['NOT REPORTED', 'Not due'] };
+    const rows = inv.filter(x => x.status !== 'Paid').map(x => `<tr><td>${esc(x.invoice)}<br><small>${esc(x.customer)}</small></td>
+      <td class="n">${money(x.status === 'Remittance received' ? x.remitted : x.outstanding)}</td><td>${chip(...map[x.status])}</td></tr>`).join('');
+    return card('Collected or remitted', pct(got / tot, 0), money(got) + ' of ' + money(tot) + ' invoiced') +
+      card('Still owed', money(owed), 'including short payments') +
+      `<table class="st"><tr><th>Open invoice</th><th class="n">Amount</th><th>Status</th></tr>${rows}</table>
+       <p class="fn">Remittances from Eastvale College and Northfield City Council were read by the invoice reader and matched to INV-5524 and INV-5530.</p>`;
+  },
+  ocr() {
+    ctl(`<a class="btnlink" href="/reader.html">Try the live reader ↗</a>`);
+    const o = D.ocr, outcomes = ['READY', 'NEEDS APPROVAL', 'EXCEPTION'];
+    const label = { 'READY': 'Ready to post', 'NEEDS APPROVAL': 'Needs approval', 'EXCEPTION': 'Held: exception' };
+    const count = (st, sc) => o.filter(x => x.status === st && x.scanned === sc).length;
+    draw({ type: 'bar', data: { labels: outcomes.map(x => label[x]), datasets: [
+        { label: 'Scanned image (OCR)', data: outcomes.map(st => count(st, true)), backgroundColor: BLUE, borderRadius: 3, stack: 's' },
+        { label: 'Emailed PDF or text', data: outcomes.map(st => count(st, false)), backgroundColor: '#1baf7a', borderRadius: 3, stack: 's' }] },
+      options: { maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end' }, tooltip: { callbacks: {
+          label: i => ' ' + i.dataset.label + ': ' + i.raw + ' document' + (i.raw === 1 ? '' : 's'),
+          afterBody: i => o.filter(x => x.status === outcomes[i[0].dataIndex]).map(x => '• ' + x.who + ' ' + (x.total ? money(x.total) : '')) } } },
+        scales: { y: { ...noGrid, beginAtZero: true, ticks: { stepSize: 1 }, stacked: true, grid: { color: '#edebe9' } }, x: { ...noGrid, stacked: true } } } });
+    const secs = o.reduce((a, x) => a + x.seconds, 0);
+    const held = o.filter(x => x.kind === 'invoice' && x.status !== 'READY').reduce((a, x) => a + x.total, 0);
+    const caught = o.filter(x => x.status !== 'READY').map(x => `<li>${chip(x.status === 'EXCEPTION' ? 'RED' : 'AMBER', x.status === 'EXCEPTION' ? 'Held' : 'Approve')}
+      <span><b>${esc(x.who)}</b>: ${esc(x.issues[0] || '')}</span></li>`).join('');
+    return card('Documents read', String(o.length), secs.toFixed(1) + ' seconds for the batch') +
+      card('Supplier invoices held for review', money(held), 'until someone approves them') +
+      `<ul class="acts">${caught}</ul><p class="fn">Each document is checked for ABN, GST, purchase order, duplicates and GL account before anything reaches Xero.</p>`;
+  },
+  gl() {
+    const G = D.gl, T = G.threshold, view = opt.gview || 'By invoice';
+    const tierCol = { 'Auto-coded': BLUE, 'Auto-coded, spot-check': '#1baf7a', 'Exception': ORANGE };
+    ctl(controls('gview', ['By invoice', 'Spend by GL account'], view) +
+      ` <button type="button" class="dl" data-csv="1">Download exceptions (CSV)</button>`);
+    const thresholdLine = { id: 'thr', afterDatasetsDraw(c) { if (view !== 'By invoice') return; const x = c.scales.x.getPixelForValue(T), a = c.chartArea, g = c.ctx;
+      g.save(); g.strokeStyle = '#252423'; g.setLineDash([5, 4]); g.beginPath(); g.moveTo(x, a.top); g.lineTo(x, a.bottom); g.stroke();
+      g.restore(); } };
+    if (view === 'By invoice') {
+      const r = [...G.rows].sort((a, b) => b.conf - a.conf);
+      draw({ type: 'bar', data: { labels: r.map(x => x.supplier + ' ' + x.invoice), datasets: [{ label: 'Confidence', data: r.map(x => x.conf),
+          backgroundColor: r.map(x => tierCol[x.tier]), borderRadius: 4, maxBarThickness: 26 }] },
+        options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end', labels: { generateLabels: () =>
+              Object.entries(tierCol).map(([t, c]) => ({ text: t, fillStyle: c, strokeStyle: c, pointStyle: 'circle' })) }, onClick: () => {} },
+            tooltip: { callbacks: { title: i => r[i[0].dataIndex].supplier + ' ' + r[i[0].dataIndex].invoice + ' | ' + money(r[i[0].dataIndex].amount) + ' ex GST',
+              label: i => { const x = r[i.dataIndex]; return x.code ? ' ' + x.code + ' ' + x.name + ' at ' + pct(x.conf, 0) : ' Not coded: best match ' + pct(x.conf, 0); },
+              afterBody: i => { const x = r[i[0].dataIndex]; return x.candidates.slice(0, 2).map(c => c.code + ' ' + c.name + ': ' + c.evidence.join('; ')); } } } },
+          scales: { x: { ...pctAxis(0, 1), title: { display: true, text: 'GL confidence (dashed line: auto-code threshold ' + pct(T, 0) + ')' } }, y: noGrid } }, plugins: [thresholdLine] });
+    } else {
+      const by = {};
+      G.rows.forEach(x => { const k = x.code ? x.code + ' ' + x.name : 'Not coded'; by[k] = (by[k] || 0) + x.amount; });
+      const e = Object.entries(by).sort((a, b) => (a[0] === 'Not coded') - (b[0] === 'Not coded') || b[1] - a[1]);
+      draw({ type: 'bar', data: { labels: e.map(x => x[0]), datasets: [{ label: 'Spend ex GST', data: e.map(x => x[1]),
+          backgroundColor: e.map(x => x[0] === 'Not coded' ? ORANGE : BLUE), borderRadius: 4, maxBarThickness: 26 }] },
+        options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: i => ' ' + money(i.raw) + ' ex GST' } } }, scales: { x: moneyAxis(), y: noGrid } } });
+    }
+    const ex = G.rows.filter(x => x.tier === 'Exception'), auto = G.rows.filter(x => x.tier !== 'Exception');
+    const exRows = ex.map(x => `<div class="exc"><div class="exh">${chip('RED', 'GL exception')}<b>${esc(x.supplier)} ${esc(x.invoice)}</b><span class="n">${money(x.amount)}</span></div>
+      <div>Best match <b>${esc(x.candidates[0] ? x.candidates[0].code + ' ' + x.candidates[0].name : 'none')}</b> at ${pct(x.conf, 0)}${x.candidates[1] ? `; next ${esc(x.candidates[1].code + ' ' + x.candidates[1].name)} at ${pct(x.candidates[1].score, 0)}` : ''}</div>
+      <div class="ev">Why: ${esc(x.candidates[0] ? x.candidates[0].evidence.join('; ') : 'no keywords, PO or supplier history matched')}.${x.no_po ? ' No purchase order.' : ''}${x.new_supplier ? ' New supplier, so no coding history.' : ''}</div>
+      ${x.related.map(r => `<div class="ev">${esc(r)}</div>`).join('')}
+      <div class="ev">Routed to <b>${esc(x.routed || 'Accounts Lead')}</b>${x.cc ? ', copied to ' + esc(x.cc) : ''}, asking them to confirm the account.</div></div>`).join('');
+    return card('Coded automatically', auto.length + ' of ' + G.rows.length, 'supplier invoices at or above ' + pct(T, 0) + ' confidence') +
+      card('GL exceptions', String(ex.length), money(ex.reduce((a, x) => a + x.amount, 0)) + ' ex GST waiting for a code') +
+      `<h4 class="sh">Exceptions report</h4>${exRows || '<p class="fn">No exceptions in this batch.</p>'}
+      <p class="fn">Codes come from the purchase order first, then the supplier's usual account, then keywords in the invoice lines.
+      Spot-check: coded above the threshold but without a purchase order.</p>`;
+  },
+  service() {
+    ctl('');
+    const src = D.months.filter(inSeason);
+    draw({ type: 'line', data: { labels: src.map(m => m.m), datasets: [
+        { label: 'Crew utilisation', data: src.map(m => m.util), borderColor: BLUE, backgroundColor: BLUE, borderWidth: 2, pointRadius: 4, tension: .25 },
+        { label: 'On-time completion', data: src.map(m => m.ot), borderColor: ORANGE, backgroundColor: ORANGE, borderWidth: 2, pointRadius: 4, tension: .25 }] },
+      options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top', align: 'end' }, tooltip: { callbacks: {
+          title: i => src[i[0].dataIndex].m + ' | ' + src[i[0].dataIndex].s, label: i => ' ' + i.dataset.label + ': ' + pct(i.raw, 0) } } },
+        scales: { y: pctAxis(0.2, 1), x: noGrid } } });
+    const avg = k => src.reduce((a, m) => a + m[k], 0) / src.length;
+    const worst = src.reduce((a, m) => (m.ot < a.ot ? m : a), src[0]);
+    return card('Utilisation', pct(avg('util'), 0), season || 'full year') +
+      card('On-time completion', pct(avg('ot'), 0), season || 'full year') +
+      card('Lowest on-time', worst.m, pct(worst.ot, 0) + ' of jobs on time') +
+      `<p class="fn">Utilisation is the billable share of paid crew hours. Use the season filter to compare peak with the quiet months.</p>`;
+  },
+  plant() {
+    const view = opt.pview || 'Utilisation';
+    const util = view === 'Utilisation';
+    ctl(controls('pview', ['Utilisation', 'Contribution'], view));
+    const f = [...D.fleet].sort((a, b) => util ? b.util - a.util : b.contribution - a.contribution);
+    draw({ type: 'bar', data: { labels: f.map(x => x.asset), datasets: [{ label: view, data: f.map(x => util ? x.util : x.contribution),
+        backgroundColor: f.map(x => (util ? x.util < 0.4 : x.contribution < 0) ? ORANGE : BLUE), borderRadius: 4, maxBarThickness: 46 }] },
+      options: { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: {
+        title: i => f[i[0].dataIndex].asset + ' | ' + f[i[0].dataIndex].desc,
+        label: i => ' ' + (util ? 'Utilisation ' + pct(i.raw, 0) : 'Contribution ' + money(i.raw)),
+        afterLabel: i => ' ' + f[i.dataIndex].breakdowns + ' breakdown days in 8 weeks' } } },
+        scales: { y: util ? pctAxis(0, 1) : moneyAxis(), x: noGrid } } });
+    const t = D.tickets;
+    const acts = D.actions.slice(0, 6).map(a => `<li>${chip(a.sev === 'RED' ? 'RED' : 'AMBER', a.sev === 'RED' ? 'Now' : 'Soon')}
+      <span>${esc(a.item)}</span></li>`).join('');
+    return card('Ticket compliance', Math.round((t.total - t.expired) / t.total * 100) + '%', t.expired + ' expired, ' + t.soon + ' due in 30 days') +
+      `<ul class="acts">${acts}</ul><p class="fn">Orange: under 40% utilised, or negative contribution.</p>`;
+  },
+};
+
+function downloadExceptions() {
+  const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+  const head = ['Document', 'Supplier', 'Invoice', 'Amount ex GST', 'Best match', 'Confidence', 'Second match', 'Evidence', 'Related', 'Routed to', 'Copied to'];
+  const lines = D.gl.rows.filter(x => x.tier === 'Exception').map(x => [x.doc, x.supplier, x.invoice, x.amount.toFixed(2),
+    x.candidates[0] ? x.candidates[0].code + ' ' + x.candidates[0].name : '', pct(x.conf, 0),
+    x.candidates[1] ? x.candidates[1].code + ' ' + x.candidates[1].name + ' ' + pct(x.candidates[1].score, 0) : '',
+    x.candidates[0] ? x.candidates[0].evidence.join('; ') : '', x.related.join(' | '), x.routed, x.cc].map(q).join(','));
+  const url = URL.createObjectURL(new Blob([[head.map(q).join(','), ...lines].join('\r\n')], { type: 'text/csv' }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: 'gl_exceptions.csv' }); a.click(); URL.revokeObjectURL(url);
+}
+
+function render() {
+  const m = META[tab];
+  document.getElementById('vTitle').innerHTML = esc(m.title) + ` <a class="drill" href="${m.href}">Details ↗</a>`;
+  document.getElementById('vAbout').textContent = m.about;
+  document.getElementById('side').innerHTML = PAGES[tab]();
+  document.querySelectorAll('.tabs button').forEach(b => { const on = b.dataset.tab === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  document.querySelectorAll('.slicer button').forEach(b => b.classList.toggle('on', b.dataset.s === season));
+  document.getElementById('report').classList.toggle('noseason', !['roic', 'service'].includes(tab));
+}
+document.querySelector('.tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { tab = b.dataset.tab; render(); } });
+document.querySelector('.slicer').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { season = b.dataset.s; render(); } });
+document.getElementById('report').addEventListener('click', e => {
+  if (e.target.closest('[data-csv]')) { downloadExceptions(); return; }
+  const b = e.target.closest('[data-unit],[data-mode],[data-view],[data-pview],[data-cview],[data-gview]'); if (!b) return;
+  if (b.dataset.unit) opt.unit = b.dataset.unit;
+  if (b.dataset.mode) opt.mode = b.dataset.mode;
+  if (b.dataset.view) opt.view = b.dataset.view;
+  if (b.dataset.pview) opt.pview = b.dataset.pview;
+  if (b.dataset.cview) opt.cview = b.dataset.cview;
+  if (b.dataset.gview) opt.gview = b.dataset.gview;
+  render();
+});
+render();
+})();
+"""
+
+
+def build() -> str:
+    d = data()
+    tabs = "".join(f"<button type='button' role='tab' data-tab='{k}'>{esc(t)}</button>" for k, t, _, _ in TABS)
+    meta = json.dumps({k: {"title": t, "href": h, "about": a} for k, t, h, a in TABS})
+    seasons: list[str] = []
+    for m in d["months"]:
+        if m["s"] not in seasons:
+            seasons.append(m["s"])
+    slicer = "".join(f"<button type='button' data-s='{esc(s)}'>{esc(s.replace(' (assumed)', ''))}</button>" for s in seasons)
+    js = JS.replace("__DATA__", json.dumps(d)).replace("__META__", meta)
+    return f"""<style>{CSS}</style>
+<div class="report" id="report">
+  <div class="rhead">
+    <div><b>Green Turf | 90-Day Plan review</b><span>Illustrative data</span></div>
+    <div class="slicer" role="group" aria-label="Season filter"><span>Season</span>
+      <button type="button" data-s="">All</button>{slicer}</div>
+  </div>
+  <div class="page">
+    <div class="main">
+      <div class="vhead"><h3 id="vTitle"></h3><div class="vctl" id="vCtl"></div></div>
+      <p class="about" id="vAbout"></p>
+      <div class="chartbox"><canvas id="chart" role="img" aria-label="Report chart"></canvas></div>
+    </div>
+    <aside class="side" id="side"></aside>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Report pages">{tabs}</div>
+</div>
+<p class="note">All figures are illustrative, calculated from sample data to show how I'd review the business. Click a
+tab to change the page, hover a bar or point for the figures, and click a legend item to hide a series. The season filter
+applies to the ROIC and service efficiency tabs.</p>
+<script src="/vendor/chart.umd.min.js"></script>
+<script>{js}</script>"""
+
+
+CSS = """
+.report{background:#f3f2f1;border:1px solid #d6dbd5;border-radius:12px;overflow:hidden;margin:6px 0 10px;
+  font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;box-shadow:0 8px 24px -16px rgba(20,60,30,.35)}
+.rhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#0f5f2b;color:#fff;
+  padding:10px 16px}
+.rhead b{font-size:16px;display:block}.rhead span{font-size:12px;opacity:.85}
+.report button{all:unset;box-sizing:border-box;cursor:pointer}
+.report button:focus-visible{outline:2px solid #1fb43e;outline-offset:2px}
+.rhead .slicer{display:flex;gap:4px;flex-wrap:wrap;align-items:center;transition:opacity .2s;width:auto;margin:0;box-shadow:none;border:0}
+.slicer span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-right:4px;opacity:.85}
+.slicer button{font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.45);color:#fff}
+.slicer button.on{background:#fff;color:#0f5f2b;border-color:#fff}
+.report.noseason .slicer{opacity:.4;pointer-events:none}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:10px;padding:12px;min-height:480px}
+.main,.side{background:#fff;border:1px solid #e1dfdd;border-radius:6px;padding:12px 14px;min-width:0}
+.vhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.vhead h3{font-size:15px;font-weight:600;color:#252423;margin:0}
+.drill{font-size:12px;font-weight:400;color:#0a6aa1;text-decoration:none;margin-left:8px}.drill:hover{text-decoration:underline}
+.vctl{display:flex;gap:4px;flex-wrap:wrap}
+.vctl button{font-size:12px;padding:3px 10px;border-radius:4px;border:1px solid #c8c6c4;color:#252423;background:#fff}
+.vctl button.on{background:#0f5f2b;border-color:#0f5f2b;color:#fff}
+.about{font-size:12.5px;color:#605e5c;margin:6px 0 8px;max-width:760px}
+.chartbox{position:relative;height:370px}
+.kc{border:1px solid #edebe9;border-top:3px solid #1fb43e;border-radius:6px;padding:8px 12px;margin-bottom:8px}
+.kc span{display:block;font-size:11.5px;color:#605e5c}.kc b{display:block;font-size:22px;color:#252423;line-height:1.25}
+.kc small{font-size:11.5px;color:#605e5c}
+.st{font-size:12px;border:0;box-shadow:none;margin-top:4px}.st th{background:#f3f2f1;font-size:11px;padding:5px 6px}
+.st td{padding:5px 6px}.st tr.pick{cursor:pointer}.st tr.pick:hover td{background:#f3f9f4}
+.st tr.pick.on td{background:#e4f6e8;font-weight:600}.st .neg{color:#b52f2e}.st .pos{color:#14813a}
+.chip{display:inline-flex;gap:4px;align-items:center;font-size:11px;font-weight:600;color:#252423;white-space:nowrap;
+  padding:1px 8px 1px 2px;border-radius:999px;background:color-mix(in srgb,var(--c) 12%,#fff)}
+.chip b{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;background:var(--c);color:#fff;font-size:10px}
+.acts{list-style:none;padding:0;margin:4px 0 0}.acts li{display:flex;gap:8px;align-items:flex-start;font-size:12px;padding:5px 0;
+  border-bottom:1px solid #f0f0ee;margin:0}.acts li>span:not(.chip){flex:1}.acts .chip{flex:none}
+.fn{font-size:11.5px;color:#605e5c;margin:8px 0 0}
+.dl{font-size:12px;padding:3px 10px;border-radius:4px;border:1px dashed #0f5f2b;color:#0f5f2b}
+.sh{font-size:12.5px;margin:10px 0 6px;color:#252423}
+.exc{border:1px solid #f1c9b5;background:#fff8f4;border-radius:6px;padding:8px 10px;font-size:12px;margin-bottom:6px}
+.exh{display:flex;gap:6px;align-items:center;margin-bottom:4px}.exh b{flex:1}.exc .ev{color:#605e5c;margin-top:3px}
+.btnlink{font-size:12px;padding:4px 12px;border-radius:4px;background:#0f5f2b;color:#fff;text-decoration:none}
+.btnlink:hover{background:#14813a}.st small{color:#605e5c}
+.tabs{display:flex;gap:2px;flex-wrap:wrap;background:#e8e6e4;border-top:1px solid #d2d0ce;padding:4px 8px 0}
+.tabs button{font-size:12.5px;padding:7px 14px;color:#252423;border-bottom:3px solid transparent;border-radius:4px 4px 0 0}
+.tabs button:hover{background:#f3f2f1}.tabs button.on{border-bottom-color:#1fb43e;font-weight:600;background:#fff}
+@media(max-width:900px){.page{grid-template-columns:1fr}.chartbox{height:320px}}
+"""

@@ -11,24 +11,51 @@ import shutil
 from pathlib import Path
 
 from common.report import OUTPUT, ROOT, page
+from webbuild import plan
+from webbuild.login import page as login_page
 
 PUBLIC = ROOT / "public"
 SITE = ROOT / "webbuild"
 
-NAV = """<nav style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px;font-size:13px">
-<a href="/" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Overview</a>
-<a href="/reader.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Invoice reader — try it</a>
-<a href="/invoice-reader-batch.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Batch results</a>
-<a href="/project-control.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Margin early-warning</a>
-<a href="/plant-allocation.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Plant allocation</a>
-<a href="/power-bi.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Power BI feeds</a>
-</nav>"""
+NAV_GROUPS = [
+    ("First 90 days", [("index.html", "One-page review"), ("approach.html", "Approach"), ("plan-1.html", "1 · Get to know"), ("plan-2.html", "2 · Priorities"),
+                     ("plan-3.html", "3 · Partnering"), ("plan-4.html", "4 · Risks & quick wins"),
+                     ("plan-5.html", "5 · Leadership"), ("season.html", "Timing across the season"),
+                     ("assumptions.html", "Assumptions")]),
+]
+
+NAV_CSS = """<style>.sitenav{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 10px;margin:-8px 0 12px;
+border-bottom:1px solid var(--line)}.sitenav .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:3px 0;font-size:13px}
+.sitenav .g{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);min-width:84px}
+.sitenav a{padding:3px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff}
+.sitenav a:hover{border-color:var(--green)}.sitenav a.on{background:var(--green);border-color:var(--green);color:#fff}
+@media(max-width:800px){.sitenav{position:static}.sitenav .g{min-width:100%}}</style>"""
+
+
+def nav_for(fname: str) -> str:
+    rows = "".join(
+        f"<div class='row'><span class='g'>{g}</span>" + "".join(
+            f"<a href='/{u}'{' class=\'on\'' if u == fname else ''}>{t}</a>" for u, t in links) + "</div>"
+        for g, links in NAV_GROUPS)
+    return NAV_CSS + BRANDBAR + f"<nav class='sitenav' aria-label='Site'>{rows}</nav>"
+
+
+BRANDBAR = """<div class="brandbar"><a href="/index.html" aria-label="Back to the 90-day plan"><img
+src="/brand/greenturf-logo.jpg" alt="Green Turf" width="174" height="52"></a><div class="by">Prepared for Green Turf by
+<b>James Fischer-Myall</b><br>Business Operations Director, final round · <a href="/api/logout">Sign out</a></div></div>"""
+
+
+def theme(html: str) -> str:
+    """Pico CSS underneath, the page's own styles, then the Green Turf brand layer on top. Light theme only."""
+    return (html.replace('<html lang="en">', '<html lang="en" data-theme="light">', 1)
+            .replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<link rel="stylesheet" href="/vendor/pico.green.min.css">', 1)
+            .replace("</head>", '<link rel="stylesheet" href="/brand.css"></head>', 1))
 
 SAMPLES = [
-    ("meridian_MSC-0042", "Consultant invoice — no GL, new supplier", "Needs approval"),
-    ("bayside_BPH-4436", "Plant hire — over its purchase order", "Needs approval / hold"),
-    ("greenline_GIS-3307", "Irrigation parts — GST error", "Held"),
-    ("bayside_BPH-4410", "Plant hire — already processed", "Held (duplicate)"),
+    ("meridian_MSC-0042", "Consultant invoice: no GL, new supplier", "Needs approval"),
+    ("bayside_BPH-4436", "Plant hire: over its purchase order", "Needs approval / hold"),
+    ("greenline_GIS-3307", "Irrigation parts: GST error", "Held"),
+    ("bayside_BPH-4410", "Plant hire: already processed", "Held (duplicate)"),
     ("pitchline_PSS-20915", "Synthetic turf supply on PO", "Ready"),
     ("kerrigan_KQ-5520", "Crushed rock on PO", "Ready"),
     ("southway_SF-77812", "Bulk diesel, no PO", "Ready"),
@@ -37,8 +64,8 @@ SAMPLES = [
 ]
 
 
-def with_nav(html: str) -> str:
-    return html.replace('<div class="wrap">', '<div class="wrap">' + NAV, 1)
+def with_nav(html: str, fname: str) -> str:
+    return html.replace('<div class="wrap">', '<div class="wrap">' + nav_for(fname), 1)
 
 
 def reader_page() -> str:
@@ -78,7 +105,7 @@ const pill = {{'READY':'GREEN','NEEDS APPROVAL':'AMBER','EXCEPTION':'RED'}};
 let worker = null;
 async function getWorker() {{
   if (worker) return worker;
-  if (!window.Tesseract) throw new Error('OCR library did not load — check the connection, or paste the text instead.');
+  if (!window.Tesseract) throw new Error('OCR library did not load. Check the connection, or paste the text instead.');
   $('#progress').textContent = 'Loading OCR engine (first time only)…';
   worker = await Tesseract.createWorker('eng', 1, {{ logger: m => {{ if (m.status === 'recognizing text')
     $('#progress').textContent = `Reading… ${{Math.round(m.progress * 100)}}%`; }} }});
@@ -138,12 +165,12 @@ document.querySelectorAll('.sample').forEach(b => b.addEventListener('click', as
 $('#file').addEventListener('change', e => {{ const f = e.target.files[0]; if (f) readImage(f, f.name); }});
 $('#pasteGo').addEventListener('click', () => {{ const t = $('#paste').value; if (t.trim()) send(t, 'pasted text', null); }});
 </script>"""
-    return page("AP Invoice Reader — Live", "Read a scanned invoice or remittance, validate it, suggest the GL, route it", body)
+    return page("AP Invoice Reader | Live", "Read a scanned invoice or remittance, validate it, suggest the GL, route it", body)
 
 
 def landing() -> str:
     cards = [
-        ("/reader.html", "Invoice & remittance reader — try it live",
+        ("/reader.html", "Invoice and remittance reader, try it live",
          "Pick a sample scan or upload an image. The reader extracts the fields, validates ABN, GST, PO and duplicates, "
          "suggests the GL account, and drafts an approval email when it isn't sure."),
         ("/invoice-reader-batch.html", "Reader batch results",
@@ -152,17 +179,18 @@ def landing() -> str:
          "Forecast margin at completion, exceptions with owners and due dates, tamper-evident action trail."),
         ("/plant-allocation.html", "Plant & operator allocation",
          "Lowest-cost weekly plan across owned fleet and hire, gated by tickets, inductions and service windows."),
-        ("/power-bi.html", "Power BI data feeds",
-         "Live CSV/JSON feeds for Power BI Desktop or Excel (Get Data → Web). Recalculated on every refresh."),
     ]
     html = "<div class='grid k2'>" + "".join(
         f"<a class='card' href='{u}' style='text-decoration:none;color:inherit'><h3>{t} →</h3><p class='note' style='margin:0'>{d}</p></a>"
         for u, t, d in cards) + "</div>"
+    html = """<div class="banner" style="background:#f1f2ef;border:1px dashed #aab3ab"><b>Level 3: for later.</b> These are
+examples of improvements that could be considered once the committed pipeline is delivered, if Mick and Dean want to go
+down that path. They aren't proposals for the first 90 days. <a href="/index.html">Back to the 90-day plan</a>.</div>""" + html
     html += """<h2>What this is</h2><p style="max-width:760px">Working prototypes prepared for a Business Operations Director
-interview. They show how targeted automation could give management better visibility, remove repetitive work and
-improve the speed and quality of decisions. They are demonstrations on invented data, not implemented systems, and they
-make no claim about any company's current performance.</p>"""
-    return page("Business Modernisation Prototypes", "James Fischer-Myall · LogisticsDx", html)
+interview. They show how automation could later give management better visibility and cut out repetitive admin.
+They're demonstrations on invented data, not implemented systems, and they make no claim about any company's current
+performance.</p>"""
+    return page("Working Examples", "Referred to in section 4: opportunities once the pipeline is delivered", html)
 
 
 def power_bi() -> str:
@@ -175,6 +203,9 @@ def power_bi() -> str:
         ("plant_plan", "Next week's allocation: owned vs hire, cost and hire alternative"),
         ("plant_fleet", "8-week utilisation, breakdowns, contribution by machine"),
         ("plant_actions", "Compliance and fleet actions with owners"),
+        ("season_monthly", "Seasonality: ROIC, utilisation and on-time completion per unit per month (demonstrative)"),
+        ("season_units", "Seasonality: full-year ROIC per unit"),
+        ("season_business", "Seasonality: whole-business ROIC and service efficiency by month"),
     ]
     rows = "".join(f"<tr><td class='mono'>{t}</td><td>{d}</td><td><a href='/api/powerbi?table={t}&format=csv'>CSV</a> · "
                    f"<a href='/api/powerbi?table={t}&format=json'>JSON</a></td></tr>" for t, d in feeds)
@@ -198,17 +229,29 @@ def main() -> None:
         shutil.rmtree(PUBLIC)
     (PUBLIC / "samples").mkdir(parents=True)
     (PUBLIC / "downloads").mkdir()
-    (PUBLIC / "index.html").write_text(with_nav(landing()), encoding="utf-8")
-    (PUBLIC / "reader.html").write_text(with_nav(reader_page()), encoding="utf-8")
-    (PUBLIC / "power-bi.html").write_text(with_nav(power_bi()), encoding="utf-8")
+    for fname, html in plan.pages(nav_for).items():
+        (PUBLIC / fname).write_text(html, encoding="utf-8")
+    (PUBLIC / "prototypes.html").write_text(with_nav(landing(), "prototypes.html"), encoding="utf-8")
+    (PUBLIC / "reader.html").write_text(with_nav(reader_page(), "reader.html"), encoding="utf-8")
+    (PUBLIC / "power-bi.html").write_text(with_nav(power_bi(), "power-bi.html"), encoding="utf-8")
     for src, dst in ((OUTPUT / "invoice_reader" / "invoice_reader.html", "invoice-reader-batch.html"),
                      (OUTPUT / "project_control.html", "project-control.html"),
                      (OUTPUT / "plant_allocation.html", "plant-allocation.html")):
-        (PUBLIC / dst).write_text(with_nav(src.read_text(encoding="utf-8")), encoding="utf-8")
+        html = src.read_text(encoding="utf-8").replace("Generated by greenturf-modernisation-showcase · ", "Green Turf prototypes · ").replace("DATA — every project", "DATA. Every project")
+        (PUBLIC / dst).write_text(with_nav(html, dst), encoding="utf-8")
     for f in (SITE / "samples").glob("*.jpg"):
         shutil.copy(f, PUBLIC / "samples" / f.name)
     for f in ("ap_review_batch.xlsx", "xero_bills_import.csv"):
         shutil.copy(OUTPUT / "invoice_reader" / f, PUBLIC / "downloads" / f)
+    (PUBLIC / "vendor").mkdir()
+    (PUBLIC / "brand").mkdir()
+    for f in ("pico.green.min.css", "PICO-LICENSE.md", "chart.umd.min.js", "CHARTJS-LICENSE.md"):
+        shutil.copy(SITE / "vendor" / f, PUBLIC / "vendor" / f)
+    shutil.copy(SITE / "brand" / "greenturf-logo.jpg", PUBLIC / "brand" / "greenturf-logo.jpg")
+    shutil.copy(SITE / "brand.css", PUBLIC / "brand.css")
+    for page_file in PUBLIC.glob("*.html"):
+        page_file.write_text(theme(page_file.read_text(encoding="utf-8")), encoding="utf-8")
+    (PUBLIC / "login.html").write_text(login_page(), encoding="utf-8")
     print("Site written to", PUBLIC, "-", sum(1 for _ in PUBLIC.rglob("*") if _.is_file()), "files")
 
 

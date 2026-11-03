@@ -1,0 +1,76 @@
+/* Green Turf brand layer, loaded after Pico CSS (github.com/picocss/pico, MIT) and the page's own styles.
+   Colours sampled from the logo: green #1fb43e, blue #0194e1. Darker steps are used wherever text sits on them. */
+:root{
+  --gt-green:#1fb43e;--gt-green-d:#14813a;--gt-green-dd:#0f5f2b;--gt-green-l:#e4f6e8;
+  --gt-blue:#0194e1;--gt-blue-d:#0a6aa1;--gt-blue-l:#e3f3fc;
+  --bg:#f5f8f3;--ink:#17301f;--muted:#566a5c;--line:#dde6da;--green:#14813a;--green-l:#e4f6e8;
+  --pico-primary:#14813a;--pico-primary-hover:#0f5f2b;--pico-primary-background:#14813a;
+  --pico-primary-hover-background:#0f5f2b;--pico-primary-underline:rgba(20,129,58,.4);
+  --pico-primary-focus:rgba(31,180,62,.3);--pico-border-radius:10px;
+}
+body{background:linear-gradient(180deg,#eef7ee 0,var(--bg) 240px);color:var(--ink);
+  font:14.5px/1.5 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1160px}
+
+/* Brand bar */
+.brandbar{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;
+  border:1px solid var(--line);border-radius:14px;padding:10px 18px;margin:0 0 10px;position:relative;overflow:hidden;
+  box-shadow:0 1px 2px rgba(20,60,30,.06)}
+.brandbar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;
+  background:linear-gradient(90deg,var(--gt-green) 0,var(--gt-green) 45%,var(--gt-blue) 100%)}
+.brandbar img{height:52px;width:auto;display:block}
+.brandbar .by{text-align:right;font-size:12.5px;color:var(--muted);line-height:1.35}
+.brandbar .by b{color:var(--ink)}
+
+/* Navigation (Pico styles <nav> as a flex row; this one is two stacked rows) */
+nav.sitenav{display:block;position:static;background:transparent;border-bottom:none;margin:0 0 16px;padding:0}
+.sitenav .row{gap:6px;margin:4px 0}
+.sitenav .g{color:var(--gt-green-d);font-weight:700}
+.sitenav a{border-radius:999px;border:1px solid var(--line);background:#fff;padding:4px 12px;color:var(--ink);
+  text-decoration:none;transition:border-color .15s,background .15s}
+.sitenav a:hover{border-color:var(--gt-green);background:var(--gt-green-l)}
+.sitenav a.on{background:var(--gt-green-d);border-color:var(--gt-green-d);color:#fff}
+
+/* Headings and text */
+header h1{font-size:26px;color:var(--gt-green-dd);letter-spacing:-.01em;margin:4px 0 2px}
+header p{color:var(--muted);font-size:14px}
+h2{font-size:17px;color:var(--gt-green-dd);margin:28px 0 10px}
+h3{font-size:14.5px;color:var(--ink)}
+a{color:var(--gt-blue-d)}
+.lede{color:var(--ink)}
+
+/* Cards and panels */
+.card{border-radius:14px;border-color:var(--line);box-shadow:0 1px 2px rgba(20,60,30,.05),0 6px 16px -12px rgba(20,60,30,.25)}
+a.card:hover{border-color:var(--gt-green);transform:translateY(-1px);transition:transform .15s,border-color .15s}
+.banner{border-radius:12px}
+.say{background:linear-gradient(90deg,var(--gt-green-l),#f2fbf4);border-left-color:var(--gt-green);border-radius:0 12px 12px 0}
+.brief{border-radius:12px;border-color:#b7d6c0;background:#fbfdfb}
+.phase{border-top-width:5px}.phase.p1{border-top-color:var(--gt-green-d)}.phase.p2{border-top-color:var(--gt-green)}
+.phase.p3{border-top-color:var(--gt-blue)}
+.levels .card{border-top:5px solid var(--gt-green-d)}.levels .c2{border-top-color:var(--gt-green)}
+.levels .c3{border-top-color:var(--gt-blue)}
+.lv.L1{background:var(--gt-green-d);color:#fff}.lv.L2{background:#c9eccf;color:var(--gt-green-dd)}
+.lv.L3{background:var(--gt-blue-l);color:var(--gt-blue-d);border:1px dashed #7cc4ec}
+.prio .num{color:var(--gt-green);font-size:30px}
+.kpi .v{color:var(--gt-green-dd)}
+table{border-radius:12px;overflow:hidden}
+th{background:#eef5ee}
+.pager a{border-radius:12px}.pager a:hover{border-color:var(--gt-green);background:var(--gt-green-l)}
+
+/* Pico's .grid auto-fits columns; keep plain .grid lists single-column */
+.grid:not(.k2):not(.k3):not(.k4){grid-template-columns:1fr}
+
+/* Pico's details/summary: keep the Q&A compact */
+.qa details{padding:12px 16px;margin:8px 0}
+.qa summary{color:var(--ink)}
+.qa details[open] summary{color:var(--gt-green-dd)}
+
+@media(max-width:800px){
+  .brandbar{flex-direction:column;align-items:flex-start;gap:6px}.brandbar .by{text-align:left}
+  .brandbar img{height:42px}header h1{font-size:22px}
+}
+
+/* Pico sizes file inputs as full-width form controls; keep the reader's upload compact */
+input[type=file]{width:auto;font-size:13px;padding:0;margin:0;border:0;background:none;height:auto}
+input[type=file]::file-selector-button{padding:6px 14px;font-size:13px;margin-right:10px;border-radius:8px;
+  background:var(--gt-green-d);border:0;color:#fff}

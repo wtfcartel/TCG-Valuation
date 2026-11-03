@@ -1,5 +1,6 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>AP Invoice Reader — Live</title><style>
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/vendor/pico.green.min.css">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>AP Invoice Reader | Live</title><style>
 :root{--bg:#f6f5f1;--card:#fff;--ink:#1d2a22;--muted:#5d6b62;--line:#dfe3dc;--green:#2f6b3f;--green-l:#e3efe5;
 --amber:#a5640c;--amber-l:#fbefd9;--red:#a8322d;--red-l:#f8e1df;--grey-l:#eceeea}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
@@ -21,16 +22,16 @@ tr:last-child td{border-bottom:none}
 .GREY{background:var(--grey-l);color:#555}
 .note{color:var(--muted);font-size:12.5px}.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
 footer{margin-top:28px;color:var(--muted);font-size:12px}
-</style></head>
-<body><div class="wrap"><nav style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px;font-size:13px">
-<a href="/" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Overview</a>
-<a href="/reader.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Invoice reader — try it</a>
-<a href="/invoice-reader-batch.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Batch results</a>
-<a href="/project-control.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Margin early-warning</a>
-<a href="/plant-allocation.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Plant allocation</a>
-<a href="/power-bi.html" style="padding:4px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff">Power BI feeds</a>
-</nav><header><h1>AP Invoice Reader — Live</h1><p>Read a scanned invoice or remittance, validate it, suggest the GL, route it</p></header>
-<div class="banner"><b>Prototype.</b> SYNTHETIC DEMONSTRATION DATA — every project, person, client and figure is invented to test the calculations. Nothing here describes Green Turf&#x27;s actual performance.</div>
+</style><link rel="stylesheet" href="/brand.css"></head>
+<body><div class="wrap"><style>.sitenav{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 10px;margin:-8px 0 12px;
+border-bottom:1px solid var(--line)}.sitenav .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:3px 0;font-size:13px}
+.sitenav .g{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);min-width:84px}
+.sitenav a{padding:3px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff}
+.sitenav a:hover{border-color:var(--green)}.sitenav a.on{background:var(--green);border-color:var(--green);color:#fff}
+@media(max-width:800px){.sitenav{position:static}.sitenav .g{min-width:100%}}</style><div class="brandbar"><a href="/index.html" aria-label="Back to the 90-day plan"><img
+src="/brand/greenturf-logo.jpg" alt="Green Turf" width="174" height="52"></a><div class="by">Prepared for Green Turf by
+<b>James Fischer-Myall</b><br>Business Operations Director, final round · <a href="/api/logout">Sign out</a></div></div><nav class='sitenav' aria-label='Site'><div class='row'><span class='g'>First 90 days</span><a href='/index.html'>One-page review</a><a href='/approach.html'>Approach</a><a href='/plan-1.html'>1 · Get to know</a><a href='/plan-2.html'>2 · Priorities</a><a href='/plan-3.html'>3 · Partnering</a><a href='/plan-4.html'>4 · Risks & quick wins</a><a href='/plan-5.html'>5 · Leadership</a><a href='/season.html'>Timing across the season</a><a href='/assumptions.html'>Assumptions</a></div></nav><header><h1>AP Invoice Reader | Live</h1><p>Read a scanned invoice or remittance, validate it, suggest the GL, route it</p></header>
+<div class="banner"><b>Prototype.</b> SYNTHETIC DEMONSTRATION DATA. Every project, person, client and figure is invented to test the calculations. Nothing here describes Green Turf&#x27;s actual performance.</div>
 <style>
 .sample{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:9px 11px;border:1px solid var(--line);
 border-radius:8px;background:#fff;cursor:pointer;font:inherit;color:var(--ink)}.sample:hover{border-color:var(--green)}
@@ -44,7 +45,7 @@ pre.mail{white-space:pre-wrap;font-size:12px;background:#f3f4f1;padding:10px;bor
 </style>
 <div class="grid k2">
 <div class="card"><h3>1 · Pick a sample scan, or upload your own image</h3>
-<div class="samples"><button class='sample' data-src='/samples/meridian_MSC-0042.jpg' data-name='meridian_MSC-0042.jpg'><b>Consultant invoice — no GL, new supplier</b><span>Needs approval</span></button><button class='sample' data-src='/samples/bayside_BPH-4436.jpg' data-name='bayside_BPH-4436.jpg'><b>Plant hire — over its purchase order</b><span>Needs approval / hold</span></button><button class='sample' data-src='/samples/greenline_GIS-3307.jpg' data-name='greenline_GIS-3307.jpg'><b>Irrigation parts — GST error</b><span>Held</span></button><button class='sample' data-src='/samples/bayside_BPH-4410.jpg' data-name='bayside_BPH-4410.jpg'><b>Plant hire — already processed</b><span>Held (duplicate)</span></button><button class='sample' data-src='/samples/pitchline_PSS-20915.jpg' data-name='pitchline_PSS-20915.jpg'><b>Synthetic turf supply on PO</b><span>Ready</span></button><button class='sample' data-src='/samples/kerrigan_KQ-5520.jpg' data-name='kerrigan_KQ-5520.jpg'><b>Crushed rock on PO</b><span>Ready</span></button><button class='sample' data-src='/samples/southway_SF-77812.jpg' data-name='southway_SF-77812.jpg'><b>Bulk diesel, no PO</b><span>Ready</span></button><button class='sample' data-src='/samples/torque_TH-1187.jpg' data-name='torque_TH-1187.jpg'><b>Hydraulic repair to EX20-01</b><span>Ready</span></button><button class='sample' data-src='/samples/eastvale_remittance.jpg' data-name='eastvale_remittance.jpg'><b>Customer remittance</b><span>Matched</span></button></div>
+<div class="samples"><button class='sample' data-src='/samples/meridian_MSC-0042.jpg' data-name='meridian_MSC-0042.jpg'><b>Consultant invoice: no GL, new supplier</b><span>Needs approval</span></button><button class='sample' data-src='/samples/bayside_BPH-4436.jpg' data-name='bayside_BPH-4436.jpg'><b>Plant hire: over its purchase order</b><span>Needs approval / hold</span></button><button class='sample' data-src='/samples/greenline_GIS-3307.jpg' data-name='greenline_GIS-3307.jpg'><b>Irrigation parts: GST error</b><span>Held</span></button><button class='sample' data-src='/samples/bayside_BPH-4410.jpg' data-name='bayside_BPH-4410.jpg'><b>Plant hire: already processed</b><span>Held (duplicate)</span></button><button class='sample' data-src='/samples/pitchline_PSS-20915.jpg' data-name='pitchline_PSS-20915.jpg'><b>Synthetic turf supply on PO</b><span>Ready</span></button><button class='sample' data-src='/samples/kerrigan_KQ-5520.jpg' data-name='kerrigan_KQ-5520.jpg'><b>Crushed rock on PO</b><span>Ready</span></button><button class='sample' data-src='/samples/southway_SF-77812.jpg' data-name='southway_SF-77812.jpg'><b>Bulk diesel, no PO</b><span>Ready</span></button><button class='sample' data-src='/samples/torque_TH-1187.jpg' data-name='torque_TH-1187.jpg'><b>Hydraulic repair to EX20-01</b><span>Ready</span></button><button class='sample' data-src='/samples/eastvale_remittance.jpg' data-name='eastvale_remittance.jpg'><b>Customer remittance</b><span>Matched</span></button></div>
 <p style="margin:12px 0 6px"><input type="file" id="file" accept="image/*"></p>
 <p class="note">The image is read in your browser (tesseract.js, three layout passes). Only the recognised text is sent to the
 server, where the reader validates it, suggests the GL account and routes it. Nothing is stored, posted or emailed.</p>
@@ -63,7 +64,7 @@ const pill = {'READY':'GREEN','NEEDS APPROVAL':'AMBER','EXCEPTION':'RED'};
 let worker = null;
 async function getWorker() {
   if (worker) return worker;
-  if (!window.Tesseract) throw new Error('OCR library did not load — check the connection, or paste the text instead.');
+  if (!window.Tesseract) throw new Error('OCR library did not load. Check the connection, or paste the text instead.');
   $('#progress').textContent = 'Loading OCR engine (first time only)…';
   worker = await Tesseract.createWorker('eng', 1, { logger: m => { if (m.status === 'recognizing text')
     $('#progress').textContent = `Reading… ${Math.round(m.progress * 100)}%`; } });
@@ -123,5 +124,5 @@ document.querySelectorAll('.sample').forEach(b => b.addEventListener('click', as
 $('#file').addEventListener('change', e => { const f = e.target.files[0]; if (f) readImage(f, f.name); });
 $('#pasteGo').addEventListener('click', () => { const t = $('#paste').value; if (t.trim()) send(t, 'pasted text', null); });
 </script>
-<footer>Generated by greenturf-modernisation-showcase · reporting date 31 Oct 2026 · recalculates from the CSV files in /data on every run.</footer>
+<footer>Green Turf prototypes · reporting date 31 Oct 2026 · recalculates from the CSV files in /data on every run.</footer>
 </div></body></html>

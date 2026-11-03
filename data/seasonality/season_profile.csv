@@ -1,0 +1,13 @@
+month,season,activity_index
+Jan,Slow growth,0.70
+Feb,Slow growth,0.78
+Mar,Heavy growth,1.00
+Apr,Heavy growth,1.10
+May,Heavy growth,1.02
+Jun,Dead,0.32
+Jul,Dead,0.28
+Aug,Peak,1.18
+Sep,Peak,1.32
+Oct,Peak,1.38
+Nov,Peak,1.30
+Dec,Wind-down (assumed),0.62

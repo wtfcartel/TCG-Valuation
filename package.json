@@ -1,0 +1,6 @@
+{
+  "name": "greenturf-90-day-plan",
+  "private": true,
+  "type": "module",
+  "description": "Static site with Python functions and a sign-in middleware. No dependencies and no build step."
+}

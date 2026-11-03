@@ -19,18 +19,43 @@ production applications in `wtfcartel/Trial-1-Cartel-v1` and `wtfcartel/TCG-Valu
 | `output/` | Generated pages, workbook, Xero CSV, draft emails, JSON, test results and run log |
 | `screenshots/` | Captured pages, plus cropped versions used in the executive pack |
 | `tests/test_demos.py` | 17 tests covering the calculations and controls |
+| `demo4_seasonality/`, `data/seasonality/` | Season model: ROIC per unit and service efficiency by month (also feeds `season_*` Power BI tables) |
+| `webbuild/brand.css`, `webbuild/vendor/` | Look and feel: Pico CSS v2.0.6 (MIT, github.com/picocss/pico) with a Green Turf brand layer |
+| `demo5_cashflow/`, `data/cashflow/` | 13-week cash forecast (invoicing promptly vs late), 12-month seasonal cash view, and customer payments including remittances matched by the invoice reader |
+| `webbuild/review.py`, `data/projects/customers.csv` | One-page review (Chart.js 4.4.4, MIT, in `webbuild/vendor/`) and the sample customer names behind the profitability tab |
+| `webbuild/plan.py` | The 90-day plan pages (content lives here; edit and rebuild) |
 | `api/`, `public/`, `webbuild/`, `vercel.json` | The Vercel deployment: Python functions, static site, and its build script |
 
 The executive pack (Deliverable 3) and the presentation notes and implementation assessment (Deliverables 4 and 5,
 plus the wider streamlining options) are Claude Docs, linked from the conversation.
 
+## Sign-in
+
+Every page and API call is checked on the server by `middleware.js` (Vercel Routing Middleware) before it loads. Only
+`/login.html` and its logo and styles are public. `/api/login` checks the username and password against three Vercel
+environment variables and issues a signed session cookie (HMAC-SHA256, 8 hours); `/api/logout` clears it.
+
+| Variable | What to set |
+|---|---|
+| `SITE_USERNAME` | The username to sign in with |
+| `SITE_PASSWORD` | The password |
+| `SESSION_SECRET` | A long random string used to sign the session cookie |
+
+If `SESSION_SECRET` is missing, nothing is served and the login page says sign-in isn't set up (it fails closed).
+
 ## Live deployment (Vercel)
 
 `public/` is the static site and `api/*.py` are standard-library Python functions, so Vercel needs no build or install
-step (`vercel.json`). Pages:
+step (`vercel.json`). Every page carries the plan navigation and the Green Turf logo bar. The working examples are linked from section 4.
 
 | Path | What it does |
 |---|---|
+| `/` (`index.html`) | **One-page review**: a Power BI-style report with nine tabs (ROIC, customer profitability, pipeline delivery, cash flow, customer payments, invoice OCR, GL coding with an exceptions report, service efficiency, plant and compliance), a season filter, and a Details link from each tab to its section |
+| `/approach.html` | How the plan is sequenced (three levels), the 90 days at a glance, agenda and day-90 measures |
+| `/plan-1.html` … `/plan-5.html` | One page per area of the final-round brief; ← → keys move between them, so the site can be presented directly |
+| `/season.html` | Season, ROIC per unit and service efficiency by month (demonstrative season: slow Jan–Feb, heavy growth Mar–May, dead Jun–Jul, peak Aug–Nov) |
+| `/assumptions.html` | Assumptions, how each would be tested, and what would change the plan |
+| `/prototypes.html` | Index of the working prototypes |
 | `/reader.html` | Live reader: pick a sample scan or upload an image; OCR runs in the browser (tesseract.js, 3 layout passes), then `/api/read` validates, suggests the GL and drafts the approval email |
 | `/api/read` | `POST {text, filename?, ocrConfidence?}` → extracted fields, checks, GL candidates, routing, draft email |
 | `/api/powerbi?table=…&format=csv\|json` | Live tables for Power BI Desktop / Excel (Get Data → Web): projects, exceptions, margin_history, debtor_ageing, ap_queue, plant_plan, plant_fleet, plant_actions |
