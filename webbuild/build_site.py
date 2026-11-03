@@ -13,6 +13,7 @@ from pathlib import Path
 from common.report import OUTPUT, ROOT, page
 from webbuild import plan
 from webbuild.login import page as login_page
+from webbuild import consulting
 
 PUBLIC = ROOT / "public"
 SITE = ROOT / "webbuild"
@@ -252,6 +253,7 @@ def main() -> None:
     for page_file in PUBLIC.glob("*.html"):
         page_file.write_text(theme(page_file.read_text(encoding="utf-8")), encoding="utf-8")
     (PUBLIC / "login.html").write_text(login_page(), encoding="utf-8")
+    consulting.build(PUBLIC)
     print("Site written to", PUBLIC, "-", sum(1 for _ in PUBLIC.rglob("*") if _.is_file()), "files")
 
 
