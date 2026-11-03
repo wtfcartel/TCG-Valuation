@@ -80,12 +80,47 @@ def data() -> dict:
             "scanned": "OCR" in x["method"], "seconds": x.get("seconds") or 0,
             "issues": [i.replace(" — ", ": ") for i in x["issues"]], "gl": x.get("suggested_gl") or "",
             "conf": x.get("ocr_confidence")} for x in audit]
-    return {"months": months, "units": units, "unitAnnual": season["annual"], "jobs": jobs, "cash": {
+    gl = gl_coding(audit)
+    return {"months": months, "units": units, "unitAnnual": season["annual"], "jobs": jobs, "gl": gl, "cash": {
                 "weeks": cf["weeks"], "monthly": cf["monthly"], "notInvoiced": cf["not_invoiced"], "opening": cf["opening"],
                 "lagWeeks": int(cf["assumptions"]["current_invoice_lag_weeks"])},
             "pay": {"customers": cf["customers"], "invoices": cf["invoices"]}, "ocr": ocr,
             "customers": sorted(customers.values(), key=lambda c: -c["margin"]),
             "ageing": proj["portfolio"]["ageing"], "fleet": fleet, "actions": actions, "tickets": _tickets()}
+
+
+def gl_coding(audit: list[dict]) -> dict:
+    """GL suggestion for every supplier invoice the reader processed, tiered against the auto-coding threshold."""
+    from email import message_from_string
+    with (DATA / "finance" / "policy.csv").open(newline="", encoding="utf-8") as f:
+        threshold = float(next(r["value"] for r in csv.DictReader(f) if r["setting"] == "gl_confidence_auto"))
+    with (DATA / "finance" / "chart_of_accounts.csv").open(newline="", encoding="utf-8") as f:
+        coa = {r["code"]: r["name"] for r in csv.DictReader(f)}
+    drafts = OUTPUT / "invoice_reader" / "approval_emails"
+    rows = []
+    for x in audit:
+        fl = x["fields"]
+        if fl.get("kind") != "invoice":
+            continue
+        routed = cc = ""
+        mail = drafts / (x["document"].rsplit(".", 1)[0] + ".eml")
+        if mail.exists():
+            m = message_from_string(mail.read_text(encoding="utf-8"))
+            routed = (m["To"] or "").split("<")[0].strip()
+            cc = ", ".join(a.split("<")[0].strip() for a in (m["Cc"] or "").split(",") if a.strip())
+        cands = [{"code": c["code"], "name": coa.get(c["code"], c.get("name", "")), "score": round(c["score"], 2),
+                  "evidence": c["evidence"]} for c in x["gl_candidates"]]
+        conf = x["gl_confidence"] or 0
+        code = x["suggested_gl"] or ""
+        tier = "Exception" if not code else "Auto-coded" if conf >= 0.95 else "Auto-coded, spot-check"
+        rows.append({"doc": x["document"], "supplier": fl.get("supplier_text") or "", "invoice": fl.get("invoice_number") or "",
+                     "amount": float(fl["subtotal"]) if fl.get("subtotal") not in (None, "None", "") else 0.0,
+                     "code": code, "name": coa.get(code, ""), "conf": round(conf, 2), "tier": tier, "candidates": cands,
+                     "related": [r.replace(" — ", ": ") for r in x.get("related") or []], "routed": routed, "cc": cc,
+                     "no_po": fl.get("po_number") in (None, "", "None"),
+                     "new_supplier": any("new supplier" in i.lower() for i in x["issues"]),
+                     "status": x["status"]})
+    return {"threshold": threshold, "rows": rows}
 
 
 TABS = [
@@ -107,6 +142,9 @@ TABS = [
     ("ocr", "Invoice OCR", "/plan-4.html",
      "Supplier invoices and customer remittances read by the OCR reader, then checked, coded and routed. It's a Level 3 "
      "opportunity, shown here working on sample documents."),
+    ("gl", "GL coding", "/plan-4.html",
+     "The GL account the reader suggests for each supplier invoice, and how sure it is. Anything below the auto-coding "
+     "threshold goes on the exceptions report for someone to confirm before it reaches Xero."),
     ("service", "Service efficiency", "/season.html",
      "Crew utilisation and on-time completion by month. Utilisation peaks just as on-time drops, because crews are "
      "stretched."),
@@ -285,6 +323,45 @@ const PAGES = {
       card('Supplier invoices held for review', money(held), 'until someone approves them') +
       `<ul class="acts">${caught}</ul><p class="fn">Each document is checked for ABN, GST, purchase order, duplicates and GL account before anything reaches Xero.</p>`;
   },
+  gl() {
+    const G = D.gl, T = G.threshold, view = opt.gview || 'By invoice';
+    const tierCol = { 'Auto-coded': BLUE, 'Auto-coded, spot-check': '#1baf7a', 'Exception': ORANGE };
+    ctl(controls('gview', ['By invoice', 'Spend by GL account'], view) +
+      ` <button type="button" class="dl" data-csv="1">Download exceptions (CSV)</button>`);
+    const thresholdLine = { id: 'thr', afterDatasetsDraw(c) { if (view !== 'By invoice') return; const x = c.scales.x.getPixelForValue(T), a = c.chartArea, g = c.ctx;
+      g.save(); g.strokeStyle = '#252423'; g.setLineDash([5, 4]); g.beginPath(); g.moveTo(x, a.top); g.lineTo(x, a.bottom); g.stroke();
+      g.restore(); } };
+    if (view === 'By invoice') {
+      const r = [...G.rows].sort((a, b) => b.conf - a.conf);
+      draw({ type: 'bar', data: { labels: r.map(x => x.supplier + ' ' + x.invoice), datasets: [{ label: 'Confidence', data: r.map(x => x.conf),
+          backgroundColor: r.map(x => tierCol[x.tier]), borderRadius: 4, maxBarThickness: 26 }] },
+        options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end', labels: { generateLabels: () =>
+              Object.entries(tierCol).map(([t, c]) => ({ text: t, fillStyle: c, strokeStyle: c, pointStyle: 'circle' })) }, onClick: () => {} },
+            tooltip: { callbacks: { title: i => r[i[0].dataIndex].supplier + ' ' + r[i[0].dataIndex].invoice + ' | ' + money(r[i[0].dataIndex].amount) + ' ex GST',
+              label: i => { const x = r[i.dataIndex]; return x.code ? ' ' + x.code + ' ' + x.name + ' at ' + pct(x.conf, 0) : ' Not coded: best match ' + pct(x.conf, 0); },
+              afterBody: i => { const x = r[i[0].dataIndex]; return x.candidates.slice(0, 2).map(c => c.code + ' ' + c.name + ': ' + c.evidence.join('; ')); } } } },
+          scales: { x: { ...pctAxis(0, 1), title: { display: true, text: 'GL confidence (dashed line: auto-code threshold ' + pct(T, 0) + ')' } }, y: noGrid } }, plugins: [thresholdLine] });
+    } else {
+      const by = {};
+      G.rows.forEach(x => { const k = x.code ? x.code + ' ' + x.name : 'Not coded'; by[k] = (by[k] || 0) + x.amount; });
+      const e = Object.entries(by).sort((a, b) => (a[0] === 'Not coded') - (b[0] === 'Not coded') || b[1] - a[1]);
+      draw({ type: 'bar', data: { labels: e.map(x => x[0]), datasets: [{ label: 'Spend ex GST', data: e.map(x => x[1]),
+          backgroundColor: e.map(x => x[0] === 'Not coded' ? ORANGE : BLUE), borderRadius: 4, maxBarThickness: 26 }] },
+        options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: i => ' ' + money(i.raw) + ' ex GST' } } }, scales: { x: moneyAxis(), y: noGrid } } });
+    }
+    const ex = G.rows.filter(x => x.tier === 'Exception'), auto = G.rows.filter(x => x.tier !== 'Exception');
+    const exRows = ex.map(x => `<div class="exc"><div class="exh">${chip('RED', 'GL exception')}<b>${esc(x.supplier)} ${esc(x.invoice)}</b><span class="n">${money(x.amount)}</span></div>
+      <div>Best match <b>${esc(x.candidates[0] ? x.candidates[0].code + ' ' + x.candidates[0].name : 'none')}</b> at ${pct(x.conf, 0)}${x.candidates[1] ? `; next ${esc(x.candidates[1].code + ' ' + x.candidates[1].name)} at ${pct(x.candidates[1].score, 0)}` : ''}</div>
+      <div class="ev">Why: ${esc(x.candidates[0] ? x.candidates[0].evidence.join('; ') : 'no keywords, PO or supplier history matched')}.${x.no_po ? ' No purchase order.' : ''}${x.new_supplier ? ' New supplier, so no coding history.' : ''}</div>
+      ${x.related.map(r => `<div class="ev">${esc(r)}</div>`).join('')}
+      <div class="ev">Routed to <b>${esc(x.routed || 'Accounts Lead')}</b>${x.cc ? ', copied to ' + esc(x.cc) : ''}, asking them to confirm the account.</div></div>`).join('');
+    return card('Coded automatically', auto.length + ' of ' + G.rows.length, 'supplier invoices at or above ' + pct(T, 0) + ' confidence') +
+      card('GL exceptions', String(ex.length), money(ex.reduce((a, x) => a + x.amount, 0)) + ' ex GST waiting for a code') +
+      `<h4 class="sh">Exceptions report</h4>${exRows || '<p class="fn">No exceptions in this batch.</p>'}
+      <p class="fn">Codes come from the purchase order first, then the supplier's usual account, then keywords in the invoice lines.
+      Spot-check: coded above the threshold but without a purchase order.</p>`;
+  },
   service() {
     ctl('');
     const src = D.months.filter(inSeason);
@@ -322,6 +399,17 @@ const PAGES = {
   },
 };
 
+function downloadExceptions() {
+  const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+  const head = ['Document', 'Supplier', 'Invoice', 'Amount ex GST', 'Best match', 'Confidence', 'Second match', 'Evidence', 'Related', 'Routed to', 'Copied to'];
+  const lines = D.gl.rows.filter(x => x.tier === 'Exception').map(x => [x.doc, x.supplier, x.invoice, x.amount.toFixed(2),
+    x.candidates[0] ? x.candidates[0].code + ' ' + x.candidates[0].name : '', pct(x.conf, 0),
+    x.candidates[1] ? x.candidates[1].code + ' ' + x.candidates[1].name + ' ' + pct(x.candidates[1].score, 0) : '',
+    x.candidates[0] ? x.candidates[0].evidence.join('; ') : '', x.related.join(' | '), x.routed, x.cc].map(q).join(','));
+  const url = URL.createObjectURL(new Blob([[head.map(q).join(','), ...lines].join('\r\n')], { type: 'text/csv' }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: 'gl_exceptions.csv' }); a.click(); URL.revokeObjectURL(url);
+}
+
 function render() {
   const m = META[tab];
   document.getElementById('vTitle').innerHTML = esc(m.title) + ` <a class="drill" href="${m.href}">Details ↗</a>`;
@@ -334,12 +422,14 @@ function render() {
 document.querySelector('.tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { tab = b.dataset.tab; render(); } });
 document.querySelector('.slicer').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { season = b.dataset.s; render(); } });
 document.getElementById('report').addEventListener('click', e => {
-  const b = e.target.closest('[data-unit],[data-mode],[data-view],[data-pview],[data-cview]'); if (!b) return;
+  if (e.target.closest('[data-csv]')) { downloadExceptions(); return; }
+  const b = e.target.closest('[data-unit],[data-mode],[data-view],[data-pview],[data-cview],[data-gview]'); if (!b) return;
   if (b.dataset.unit) opt.unit = b.dataset.unit;
   if (b.dataset.mode) opt.mode = b.dataset.mode;
   if (b.dataset.view) opt.view = b.dataset.view;
   if (b.dataset.pview) opt.pview = b.dataset.pview;
   if (b.dataset.cview) opt.cview = b.dataset.cview;
+  if (b.dataset.gview) opt.gview = b.dataset.gview;
   render();
 });
 render();
@@ -416,6 +506,10 @@ CSS = """
 .acts{list-style:none;padding:0;margin:4px 0 0}.acts li{display:flex;gap:8px;align-items:flex-start;font-size:12px;padding:5px 0;
   border-bottom:1px solid #f0f0ee;margin:0}.acts li>span:not(.chip){flex:1}.acts .chip{flex:none}
 .fn{font-size:11.5px;color:#605e5c;margin:8px 0 0}
+.dl{font-size:12px;padding:3px 10px;border-radius:4px;border:1px dashed #0f5f2b;color:#0f5f2b}
+.sh{font-size:12.5px;margin:10px 0 6px;color:#252423}
+.exc{border:1px solid #f1c9b5;background:#fff8f4;border-radius:6px;padding:8px 10px;font-size:12px;margin-bottom:6px}
+.exh{display:flex;gap:6px;align-items:center;margin-bottom:4px}.exh b{flex:1}.exc .ev{color:#605e5c;margin-top:3px}
 .btnlink{font-size:12px;padding:4px 12px;border-radius:4px;background:#0f5f2b;color:#fff;text-decoration:none}
 .btnlink:hover{background:#14813a}.st small{color:#605e5c}
 .tabs{display:flex;gap:2px;flex-wrap:wrap;background:#e8e6e4;border-top:1px solid #d2d0ce;padding:4px 8px 0}

@@ -36,7 +36,7 @@ step (`vercel.json`). Every page carries the plan navigation and the Green Turf 
 
 | Path | What it does |
 |---|---|
-| `/` (`index.html`) | **One-page review**: a Power BI-style report with eight tabs (ROIC, customer profitability, pipeline delivery, cash flow, customer payments, invoice OCR, service efficiency, plant and compliance), a season filter, and a Details link from each tab to its section |
+| `/` (`index.html`) | **One-page review**: a Power BI-style report with nine tabs (ROIC, customer profitability, pipeline delivery, cash flow, customer payments, invoice OCR, GL coding with an exceptions report, service efficiency, plant and compliance), a season filter, and a Details link from each tab to its section |
 | `/approach.html` | How the plan is sequenced (three levels), the 90 days at a glance, agenda and day-90 measures |
 | `/plan-1.html` … `/plan-5.html` | One page per area of the final-round brief; ← → keys move between them, so the site can be presented directly |
 | `/season.html` | Season, ROIC per unit and service efficiency by month (demonstrative season: slow Jan–Feb, heavy growth Mar–May, dead Jun–Jul, peak Aug–Nov) |
