@@ -1,0 +1,95 @@
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/vendor/pico.green.min.css">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>1 | Getting to Know the Client's Business</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#1d2a22;--muted:#5d6b62;--line:#dfe3dc;--green:#2f6b3f;--green-l:#e3efe5;
+--amber:#a5640c;--amber-l:#fbefd9;--red:#a8322d;--red-l:#f8e1df;--grey-l:#eceeea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 48px}
+header h1{font-size:22px;margin:0 0 2px}header p{margin:0;color:var(--muted)}
+.banner{background:#fff4c7;border:1px solid #e6cf70;border-radius:6px;padding:8px 12px;margin:14px 0 18px;font-size:12.5px}
+.grid{display:grid;gap:12px}.k4{grid-template-columns:repeat(4,1fr)}.k3{grid-template-columns:repeat(3,1fr)}.k2{grid-template-columns:1fr 1fr}
+@media(max-width:800px){.k4,.k3,.k2{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.kpi .v{font-size:24px;font-weight:650;margin-top:2px}
+.kpi .s{font-size:12px;color:var(--muted)}
+h2{font-size:16px;margin:26px 0 8px}h3{font-size:14px;margin:0 0 8px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#eef1ec;font-weight:600;font-size:12px;color:#33433a}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.RED{background:var(--red-l);color:var(--red)}.AMBER{background:var(--amber-l);color:var(--amber)}.GREEN{background:var(--green-l);color:var(--green)}
+.GREY{background:var(--grey-l);color:#555}
+.note{color:var(--muted);font-size:12.5px}.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+footer{margin-top:28px;color:var(--muted);font-size:12px}
+
+.lede{font-size:16px;max-width:840px;margin:0 0 14px}
+.phase{border-top:4px solid var(--green)}.phase.p2{border-top-color:#5b8f3e}.phase.p3{border-top-color:#8bb04a}
+.phase .when{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.prio{display:grid;grid-template-columns:44px 1fr;gap:12px}.prio .num{font-size:26px;font-weight:700;color:var(--green)}
+ul.tight{margin:6px 0 0;padding-left:18px}ul.tight li{margin:4px 0}
+.pager{display:flex;justify-content:space-between;gap:10px;margin-top:26px}
+.pager span{flex:1}.pager a{flex:1;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-decoration:none}
+.pager a:hover{border-color:var(--green)}.pager .r{text-align:right}.pager small{display:block;color:var(--muted)}
+.say{background:var(--green-l);border-left:4px solid var(--green);padding:10px 14px;border-radius:0 6px 6px 0;margin:14px 0;max-width:880px}
+.brief{background:#fff;border:1px dashed #b9c4bb;border-radius:8px;padding:10px 14px;margin:0 0 14px;font-size:13px}
+.brief q{font-style:italic}.brief .crit{margin-top:6px}
+.crit span{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:10px;background:#eef1ec;color:#33433a;margin:2px 4px 0 0}
+.lv{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:9px;margin-right:6px;vertical-align:1px;white-space:nowrap}
+.L1{background:#2f6b3f;color:#fff}.L2{background:#cfe3c9;color:#23502f}.L3{background:#eceeea;color:#555;border:1px dashed #aab3ab}
+.levels .card{border-top:4px solid var(--green)}.levels .c2{border-top-color:#8bb04a}.levels .c3{border-top-color:#b8bfb9}
+.qa details{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:8px 0}
+.qa summary{cursor:pointer;font-weight:600}.qa details p{margin:8px 0 0}
+.slidecount{font-size:12px;color:var(--muted)}
+@media(max-width:800px){.k4,.k3,.k2{grid-template-columns:1fr}.pager{flex-direction:column}.lede{font-size:15px}}
+</style><link rel="stylesheet" href="/brand.css"></head>
+<body><div class="wrap"><style>.sitenav{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 10px;margin:-8px 0 12px;
+border-bottom:1px solid var(--line)}.sitenav .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:3px 0;font-size:13px}
+.sitenav .g{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);min-width:84px}
+.sitenav a{padding:3px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff}
+.sitenav a:hover{border-color:var(--green)}.sitenav a.on{background:var(--green);border-color:var(--green);color:#fff}
+@media(max-width:800px){.sitenav{position:static}.sitenav .g{min-width:100%}}</style><div class="brandbar"><a href="/c/index.html" class="ldx" aria-label="Back to the engagement overview">Logistics<b>Dx</b></a>
+<div class="by">Example 90-day consulting engagement<br><b>James Fischer-Myall</b>, LogisticsDx · <a href="/api/logout">Sign out</a></div></div><nav class='sitenav' aria-label='Site'><div class='row'><span class='g'>90-day engagement</span><a href='/c/index.html'>One-page review</a><a href='/c/approach.html'>Approach</a><a href='/c/plan-1.html' class='on'>1 · Get to know</a><a href='/c/plan-2.html'>2 · Priorities</a><a href='/c/plan-3.html'>3 · Partnering</a><a href='/c/plan-4.html'>4 · Risks & quick wins</a><a href='/c/plan-5.html'>5 · Leadership</a><a href='/c/season.html'>Timing across the season</a><a href='/c/assumptions.html'>Assumptions</a></div></nav><header><h1>1 | Getting to Know the Client's Business</h1><p>Learning the business through the committed pipeline</p></header>
+<div class="banner" style="background:#eef5ef;border-color:#b9d3bf">Guiding principle: the client didn't want dramatic change. The existing pipeline of mandates gets delivered first. Anything new is added only where it helps that delivery, and strategic change waits until the pipeline is complete. It's tested with the client and adjusted in the first 30 days.</div>
+
+<p class="lede">I'd get to know the client through the work it's doing right now. That way I learn quickly, I don't pull
+people off delivery to brief me, and I can start being useful straight away.</p>
+<div class="grid k2">
+<div class="card"><h3><span class='lv L1'>Level 1</span> Start with the committed pipeline</h3><ul class="tight">
+<li>Week one: sit down with the owner and list every committed job with its client, value, stage, deadline and owner</li>
+<li>Agree what "complete" means for each: handover, client sign-off, final invoice, retention release</li>
+<li>Walk each live job with the person running it: what's going well, what's at risk, what's in their way</li>
+<li>Note the blockers I can clear without changing how anyone works</li></ul></div>
+<div class="card"><h3><span class='lv L1'>Level 1</span> People</h3><ul class="tight">
+<li><b>Owner:</b> the history of the business, what must not change, what he's concerned about and how he likes to be kept
+informed</li>
+<li><b>General manager:</b> what's been promised to clients, what's coming through the pipeline and what clients are saying</li>
+<li>One-on-ones with managers, supervisors and the office team, fitted around their workload</li>
+<li>Time on site with the crews, asking the same three questions: what works, what gets in your way, and what should I
+leave alone</li></ul></div>
+<div class="card"><h3><span class='lv L1'>Level 1</span> The numbers that already exist</h3><ul class="tight">
+<li>For each live job: quoted versus actual cost to date, variations, invoiced and still to invoice</li>
+<li>Cash: debtors, and when the committed work converts to cash</li>
+<li>Safety: tickets, inductions and incidents on current sites</li>
+<li>I'd use whatever reporting is already in place. Where a number doesn't exist, I'd note it for later rather than build
+something new mid-delivery</li></ul></div>
+<div class="card"><h3><span class='lv L3'>Level 3</span> Noted for later</h3><ul class="tight">
+<li>Double handling, spreadsheets and manual approvals</li>
+<li>Gaps in systems and reporting</li>
+<li>Structure and capacity questions</li>
+<li>These go on a list for the day-90 recommendations and aren't touched while the pipeline is being delivered</li>
+</ul></div></div>
+<h2>Output at day 30</h2>
+<div class="say">A short note for the owner and general manager covering <b>where each committed job is at, the risks to completing it
+well, what I'm doing to help, and what I've noted for later.</b> We'd agree it together, and nothing material changes
+without that agreement.</div><div class='pager'><a class='l' href='/c/approach.html'><small>← Previous</small>Engagement Approach</a><a class='r' href='/c/plan-2.html'><small>Next →</small>2 | Engagement Priorities</a></div><script>
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea,select') || e.metaKey || e.ctrlKey || e.altKey) return;
+  const sel = e.key === 'ArrowRight' ? '.pager a.r' : e.key === 'ArrowLeft' ? '.pager a.l' : null;
+  const a = sel && document.querySelector(sel);
+  if (a) location.href = a.href;
+});
+</script>
+<footer>James Fischer-Myall | LogisticsDx | Example 90-day consulting engagement</footer>
+</div></body></html>

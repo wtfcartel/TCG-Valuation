@@ -32,13 +32,18 @@ export async function valid(cookieHeader, secret, now = Date.now()) {
 
 export default async function middleware(request) {
   const secret = process.env.SESSION_SECRET;
-  if (await valid(request.headers.get('cookie'), secret)) return;   // signed in: carry on to the page
   const url = new URL(request.url);
+  // demo.logisticsdx.com opens the consulting-engagement copy of the site (public/c/)
+  const home = url.hostname.startsWith('demo.') && (url.pathname === '/' || url.pathname === '/index.html') ? '/c/index.html' : null;
+  if (await valid(request.headers.get('cookie'), secret)) {
+    return home ? Response.redirect(new URL(home, request.url), 302) : undefined;   // signed in: carry on to the page
+  }
   if (url.pathname.startsWith('/api/')) {
     return new Response(JSON.stringify({ error: 'Sign in required' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
   const login = new URL('/login.html', request.url);
   if (!secret) login.searchParams.set('e', 'setup');
-  if (url.pathname !== '/' && url.pathname !== '/index.html') login.searchParams.set('next', url.pathname + url.search);
+  if (home) login.searchParams.set('next', home);
+  else if (url.pathname !== '/' && url.pathname !== '/index.html') login.searchParams.set('next', url.pathname + url.search);
   return Response.redirect(login, 302);
 }

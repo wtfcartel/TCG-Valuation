@@ -1,0 +1,39 @@
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/vendor/pico.green.min.css">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Working Examples</title><style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#1d2a22;--muted:#5d6b62;--line:#dfe3dc;--green:#2f6b3f;--green-l:#e3efe5;
+--amber:#a5640c;--amber-l:#fbefd9;--red:#a8322d;--red-l:#f8e1df;--grey-l:#eceeea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 48px}
+header h1{font-size:22px;margin:0 0 2px}header p{margin:0;color:var(--muted)}
+.banner{background:#fff4c7;border:1px solid #e6cf70;border-radius:6px;padding:8px 12px;margin:14px 0 18px;font-size:12.5px}
+.grid{display:grid;gap:12px}.k4{grid-template-columns:repeat(4,1fr)}.k3{grid-template-columns:repeat(3,1fr)}.k2{grid-template-columns:1fr 1fr}
+@media(max-width:800px){.k4,.k3,.k2{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.kpi .v{font-size:24px;font-weight:650;margin-top:2px}
+.kpi .s{font-size:12px;color:var(--muted)}
+h2{font-size:16px;margin:26px 0 8px}h3{font-size:14px;margin:0 0 8px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#eef1ec;font-weight:600;font-size:12px;color:#33433a}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.RED{background:var(--red-l);color:var(--red)}.AMBER{background:var(--amber-l);color:var(--amber)}.GREEN{background:var(--green-l);color:var(--green)}
+.GREY{background:var(--grey-l);color:#555}
+.note{color:var(--muted);font-size:12.5px}.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+footer{margin-top:28px;color:var(--muted);font-size:12px}
+</style><link rel="stylesheet" href="/brand.css"></head>
+<body><div class="wrap"><style>.sitenav{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 10px;margin:-8px 0 12px;
+border-bottom:1px solid var(--line)}.sitenav .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:3px 0;font-size:13px}
+.sitenav .g{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);min-width:84px}
+.sitenav a{padding:3px 10px;border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;background:#fff}
+.sitenav a:hover{border-color:var(--green)}.sitenav a.on{background:var(--green);border-color:var(--green);color:#fff}
+@media(max-width:800px){.sitenav{position:static}.sitenav .g{min-width:100%}}</style><div class="brandbar"><a href="/c/index.html" class="ldx" aria-label="Back to the engagement overview">Logistics<b>Dx</b></a>
+<div class="by">Example 90-day consulting engagement<br><b>James Fischer-Myall</b>, LogisticsDx · <a href="/api/logout">Sign out</a></div></div><nav class='sitenav' aria-label='Site'><div class='row'><span class='g'>90-day engagement</span><a href='/c/index.html'>One-page review</a><a href='/c/approach.html'>Approach</a><a href='/c/plan-1.html'>1 · Get to know</a><a href='/c/plan-2.html'>2 · Priorities</a><a href='/c/plan-3.html'>3 · Partnering</a><a href='/c/plan-4.html'>4 · Risks & quick wins</a><a href='/c/plan-5.html'>5 · Leadership</a><a href='/c/season.html'>Timing across the season</a><a href='/c/assumptions.html'>Assumptions</a></div></nav><header><h1>Working Examples</h1><p>Referred to in section 4: opportunities once the pipeline is delivered</p></header>
+<div class="banner"><b>Prototype.</b> SYNTHETIC DEMONSTRATION DATA. Every project, person, client and figure is invented to test the calculations. Nothing here describes any client's actual performance.</div><div class="banner" style="background:#f1f2ef;border:1px dashed #aab3ab"><b>Level 3: for later.</b> These are
+examples of improvements that could be considered once the committed pipeline is delivered, if the owner and general manager want to go
+down that path. They aren't proposals for the first 90 days. <a href="/c/index.html">Back to the engagement overview</a>.</div><div class='grid k2'><a class='card' href='/c/reader.html' style='text-decoration:none;color:inherit'><h3>Invoice and remittance reader, try it live →</h3><p class='note' style='margin:0'>Pick a sample scan or upload an image. The reader extracts the fields, validates ABN, GST, PO and duplicates, suggests the GL account, and drafts an approval email when it isn't sure.</p></a><a class='card' href='/c/invoice-reader-batch.html' style='text-decoration:none;color:inherit'><h3>Reader batch results →</h3><p class='note' style='margin:0'>Ten emailed and scanned documents: 5 ready, 3 approval emails drafted, 2 held ($23,003).</p></a><a class='card' href='/c/project-control.html' style='text-decoration:none;color:inherit'><h3>Project margin early-warning →</h3><p class='note' style='margin:0'>Forecast margin at completion, exceptions with owners and due dates, tamper-evident action trail.</p></a><a class='card' href='/c/plant-allocation.html' style='text-decoration:none;color:inherit'><h3>Plant & operator allocation →</h3><p class='note' style='margin:0'>Lowest-cost weekly plan across owned fleet and hire, gated by tickets, inductions and service windows.</p></a></div><h2>What this is</h2><p style="max-width:760px">Working prototypes from LogisticsDx. They show how automation could later give management better visibility and cut out repetitive admin.
+They're demonstrations on invented data, not implemented systems, and they make no claim about any company's current
+performance.</p>
+<footer>LogisticsDx prototypes · reporting date 31 Oct 2026 · recalculates from the CSV files in /data on every run.</footer>
+</div></body></html>
