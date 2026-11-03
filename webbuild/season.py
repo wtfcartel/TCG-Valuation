@@ -190,7 +190,7 @@ TIP_JS = """<div id="tip" role="tooltip"></div><script>
 </script>"""
 
 
-def section(lv, brief_fn, criteria) -> str:
+def section(lv) -> str:
     r = run()
     biz = r["business"]
     peak = [b for b in biz if b["season"] == "Peak"]
@@ -199,11 +199,10 @@ def section(lv, brief_fn, criteria) -> str:
     best = max(r["annual"], key=lambda a: a["roic"])
     worst = min(r["annual"], key=lambda a: a["roic"])
     return f"""<style>{CSS}</style>
-{brief_fn("Early Risks, Opportunities & Quick Wins", criteria)}
-<p class="lede">A demonstration of how I'd read the business across the year. The season pattern is the one we've been
-working with: slow growth in January and February, heavy growth March to May, no growth in June and July, and peak from
-August to November. December wasn't specified, so I've assumed it winds down into the Christmas break. The units and
-dollar figures are invented to show the method.</p>
+<p class="lede">This supports my priorities and the risks and opportunities above. It's how I'd read the business across
+the year. I've assumed a season of slow growth in January and February, heavy growth March to May, no growth in June
+and July, peak from August to November, and a wind-down into the Christmas break in December. The units and dollar figures
+are illustrative only and would be replaced with Green Turf's own numbers.</p>
 <h2>The season</h2>{season_strip(r)}
 <div class="grid k4">
 <div class="card kpi"><div class="l">Business ROIC (year)</div><div class="v">{pct(r['business_roic'], 1)}</div>
@@ -251,7 +250,4 @@ servicing, ticket renewals and structure. If Mick and Dean decide to make a chan
 <div class="say">If I started in late November or December, my first 90 days would run from the tail of peak through the
 January and February slow period. That lines up with the plan: complete the existing mandates, collect the cash, put the
 light controls in before March, and have the Level 3 options ready to decide on well ahead of June.</div>
-<p class="note">The same figures are available as Power BI feeds: <a href="/api/powerbi?table=season_monthly&amp;format=csv">season_monthly</a>,
-<a href="/api/powerbi?table=season_units&amp;format=csv">season_units</a> and
-<a href="/api/powerbi?table=season_business&amp;format=csv">season_business</a>.</p>
 {TIP_JS}"""

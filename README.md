@@ -30,14 +30,14 @@ plus the wider streamlining options) are Claude Docs, linked from the conversati
 ## Live deployment (Vercel)
 
 `public/` is the static site and `api/*.py` are standard-library Python functions, so Vercel needs no build or install
-step (`vercel.json`). Every page carries a two-row navigation bar: **90-day plan** and **Prototypes**.
+step (`vercel.json`). Every page carries the plan navigation and the Green Turf logo bar. The working examples are linked from section 4.
 
 | Path | What it does |
 |---|---|
 | `/` (`index.html`) | **"My First 90 Days" presentation**: overview, timeline, agenda and day-90 scorecard |
 | `/plan-1.html` … `/plan-5.html` | One page per area of the final-round brief; ← → keys move between them, so the site can be presented directly |
 | `/season.html` | Season, ROIC per unit and service efficiency by month (demonstrative season: slow Jan–Feb, heavy growth Mar–May, dead Jun–Jul, peak Aug–Nov) |
-| `/qa.html` | Q&A preparation: likely questions grouped by what the panel said it would explore |
+| `/assumptions.html` | Assumptions, how each would be tested, and what would change the plan |
 | `/prototypes.html` | Index of the working prototypes |
 | `/reader.html` | Live reader: pick a sample scan or upload an image; OCR runs in the browser (tesseract.js, 3 layout passes), then `/api/read` validates, suggests the GL and drafts the approval email |
 | `/api/read` | `POST {text, filename?, ocrConfidence?}` → extracted fields, checks, GL candidates, routing, draft email |

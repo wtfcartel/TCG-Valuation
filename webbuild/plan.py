@@ -1,9 +1,9 @@
 """The "First 90 Days" presentation, as navigable web pages.
 
 Built directly on the Green Turf final-round brief ("Your First 90 Days at Green Turf"): one page per area the
-brief asks the presentation to cover, in the brief's order, plus a Q&A page organised by the four things the brief
-says the panel will explore. Every page quotes the part of the brief it answers and shows which of the brief's
-assessment criteria it addresses.
+brief asks the presentation to cover, in the brief's order, plus two supporting pages (season timing, and
+assumptions and what would change the plan) covering the areas
+the brief says the panel will explore. Page titles follow the brief's own section headings.
 
 Guiding principle, applied on every page: the business does not want dramatic change. The committed pipeline of
 work already won is delivered first (Level 1). Light controls are added only where they help that delivery
@@ -61,9 +61,8 @@ def lv(n: int) -> str:
 
 
 def brief(asks: str, criteria: list[str]) -> str:
-    tags = "".join(f"<span>{esc(c)}</span>" for c in criteria)
-    return (f"<div class='brief'><b>The brief asks:</b> <q>{asks}</q>"
-            f"<div class='crit'><b style='font-size:12px'>Assessed against:</b> {tags}</div></div>")
+    """Kept so section bodies stay readable; the brief's wording now lives in each page title, not a quoted box."""
+    return ""
 
 
 def shell(title: str, subtitle: str, body: str, nav: str, extra_css: str = "") -> str:
@@ -114,31 +113,17 @@ def overview() -> str:
     cards = "".join(
         f"<div class='card phase {c}'><div class='when'>{w}</div><h3 style='margin-top:4px'>{t}</h3>"
         f"<ul class='tight'>{''.join(f'<li>{x}</li>' for x in items)}</ul></div>" for c, w, t, items in phases)
-    mapping = [
-        ("1. How You Would Get to Know the Business", "plan-1.html", "Learning the business through the live pipeline"),
-        ("2. Your Priorities for the First 90 Days (top 3 to 5, and why they matter)", "plan-2.html",
-         "Five priorities, starting with delivery of the existing mandates"),
-        ("3. How You Would Partner With the Owner/MD and Marketing & Growth Director", "plan-3.html",
-         "Agree the pipeline with Mick, protect it with Dean"),
-        ("4. Early Risks, Opportunities & Quick Wins", "plan-4.html", "The biggest risk is distracting the team from delivery"),
-        ("5. Your Leadership Approach", "plan-5.html", "Support the people delivering the work, then improve it"),
-        ("Q&A: reasoning, assumptions, challenge or ambiguity, adapting to new information", "qa.html",
-         "Prepared answers under the brief's four areas"),
+    agenda = [
+        ("plan-1.html", "1 | How I would get to know the business", "3 min"),
+        ("plan-2.html", "2 | My priorities for the first 90 days", "5 min"),
+        ("plan-3.html", "3 | Partnering with Mick and Dean", "3 min"),
+        ("plan-4.html", "4 | Early risks, opportunities and quick wins", "4 min"),
+        ("plan-5.html", "5 | My leadership approach", "3 min"),
+        ("season.html", "Supporting: timing across the season", "if time allows"),
+        ("assumptions.html", "Supporting: assumptions and what would change the plan", "if time allows"),
     ]
-    rows = "".join(f"<tr><td>{esc(b)}</td><td><a href='/{u}'>{esc(a)}</a></td></tr>" for b, u, a in mapping)
-    crit = [
-        (C_PRIO, "One first priority: deliver the mandates already won. Everything else sits behind it."),
-        (C_JUDG, "Change is limited to what helps live jobs. Nothing is introduced that pulls crews or the office off the work."),
-        (C_SEQ, "Three levels in a fixed order: deliver, then light controls, then strategic change once the pipeline is complete."),
-        (C_LEAD, "Listening before acting, and building trust by helping the team deliver."),
-        (C_COMM, "The committed pipeline is revenue and reputation already won, so protecting its margin and cash comes first."),
-        (C_FIT, "Suits a hands-on business at this stage of growth that has said it doesn't want dramatic change."),
-        (C_CALM, "The same principle and sequence on every page."),
-    ]
-    crit_rows = "".join(f"<tr><td style='width:34%'><b>{esc(c)}</b></td><td>{t}</td></tr>" for c, t in crit)
+    rows = "".join(f"<tr><td><a href='/{u}'>{esc(t)}</a></td><td class='n'>{m}</td></tr>" for u, t, m in agenda)
     return f"""
-{brief("Prepare a presentation outlining how you would approach your first 90 days as Business Operations Director.",
-       ALL_CRITERIA)}
 <p class="lede">Green Turf has an existing pipeline of mandates it has already committed to. My first 90 days would be
 about helping the team deliver that pipeline well, without dramatic change. Improvements come in small steps and only
 where they help delivery. Anything bigger gets prepared as options for Mick and Dean to consider once the pipeline is
@@ -147,9 +132,8 @@ complete.</p>
 change.</div>
 <h2>How the plan is sequenced</h2>{LEVELS}
 <h2>The 90 days at a glance</h2><div class="grid k3">{cards}</div>
-<h2>How this answers the brief</h2>
-<table><tr><th>What the brief asks the presentation to cover</th><th>Where it's answered</th></tr>{rows}</table>
-<h2>What the panel said it's looking for, and where the plan addresses it</h2><table>{crit_rows}</table>
+<h2>Agenda</h2>
+<table><tr><th>Section</th><th class="n">Time</th></tr>{rows}</table>
 <h2>How I'd measure myself at day 90</h2>
 <div class="grid k4">
 <div class="card kpi"><div class="l">{lv(1)} Delivery</div><div class="v" style="font-size:18px">Pipeline delivered</div>
@@ -160,8 +144,7 @@ change.</div>
 <div class="s">as they're completed</div></div>
 <div class="card kpi"><div class="l">{lv(3)} Next stage</div><div class="v" style="font-size:18px">Options agreed</div>
 <div class="s">Mick and Dean decide what comes next, and when</div></div></div>
-<p class="note">Timing: roughly 3, 5, 3, 4 and 3 minutes across the five sections (15 to 20 minutes), then 20 minutes of
-Q&amp;A.</p>"""
+"""
 
 
 def section1() -> str:
@@ -217,7 +200,7 @@ PRIORITIES = [
      "quote on the larger live jobs, variations captured as they happen, and each milestone invoiced promptly protects "
      "the value of the pipeline without changing how the team works.",
      "Weekly margin snapshot on the larger live jobs, variations captured, and each milestone invoiced as it's completed.",
-     "/project-control.html", "Example of a margin snapshot (Level 3 tool, for later)"),
+     None, None),
     (2, "A light weekly rhythm to support delivery",
      "A short weekly check-in on live jobs, with one owner and one date per action, using the tools already in place. It "
      "helps get the pipeline over the line and takes some of the day-to-day chasing off Mick. Nothing more formal than "
@@ -228,7 +211,7 @@ PRIORITIES = [
      "automation, capacity planning and structure. At day 90 I'd set these out with costs and benefits. Mick and Dean "
      "decide what happens, and when, once the committed work is complete.",
      "A short, costed list of options agreed with Mick and Dean. Nothing implemented in the first 90 days.",
-     "/prototypes.html", "Examples of possible later improvements"),
+     None, None),
 ]
 
 
@@ -351,78 +334,61 @@ it</li></ul></div>
 things for the sake of it.</div>"""
 
 
-QA = [
-    ("Your reasoning", [
-        ("Why put delivery of the existing pipeline ahead of improvement?",
-         "Because it's work we've already won. The revenue, the client relationships and our reputation are already on "
-         "the line. You've been clear that you want the pipeline completed before any strategic change, and I agree. "
-         "Changing things mid-delivery risks distracting the people doing the work. Completing it well also gives me the "
-         "evidence to recommend the right changes afterwards."),
-        ("If you could only do one thing in 90 days, what would it be?",
-         "Make sure every committed job finishes well: on time, safely and at the margin it was quoted at. If the safety "
-         "check on live sites turns up a gap, that comes first."),
-        ("Why that order?",
-         "Delivery first, then margin and cash, then a light weekly rhythm, and the next stage last. Each step only goes "
-         "ahead if it supports the one before it."),
-    ]),
-    ("Your assumptions", [
-        ("What assumptions have you made?",
-         "That there's a committed pipeline of mandates to deliver, that the business wants stability rather than "
-         "dramatic change, and that some information sits with individuals and in spreadsheets. I'd test each of these in "
-         "the first 30 days and adjust the plan at the day-30 review with Mick and Dean."),
-        ("What if the numbers you need don't exist?",
-         "In the first 90 days I'd work with what exists and ask the people running the jobs. I'd note the gaps for the "
-         "day-90 recommendations rather than build new reporting while the team is delivering."),
-    ]),
-    ("How you handle challenge or ambiguity", [
-        ("We don't want dramatic change. How does your plan reflect that?",
-         "It's the basis of the whole plan. Level 1 is delivering what's already been won. Level 2 is a few light controls, "
-         "using the tools you already have, and only where they help delivery. Level 3 covers systems, structure and "
-         "growth planning, and I'd prepare it as options rather than implement it in 90 days. You decide what happens "
-         "next, and when. It's also how I've worked before: at SILK I stabilised the Victorian operations first, and the "
-         "acquisition and integration work came after that."),
-        ("What if Mick disagrees with your priorities at day 30?",
-         "That's what the day-30 review is for. I'd want to understand what he's seeing that I'm not, test it against what "
-         "I've found on the live jobs, and adjust. It's his business. My job is to give him the clearest picture I can and "
-         "a recommendation, then commit to the decision."),
-        ("How would you handle a long-serving supervisor who's wary of you?",
-         "By helping them deliver their jobs first: clearing what's in their way without changing how they work. Their "
-         "knowledge is exactly what I need, and trust comes from following through."),
-        ("Dean wins a large new job that would stretch the current crews. What do you do?",
-         "Welcome it, then do a quick capacity check with Dean and Mick before we commit to dates: crews, plant, "
-         "subcontractors and the impact on jobs already promised. We agree a start date that protects existing clients, "
-         "or agree what we'd need to bring in. Everything can be delivered; it's a question of cost and timing."),
-    ]),
-    ("How you adapt to new information", [
-        ("What would make you change this plan?",
-         "A committed job in trouble, a safety gap or a cash issue. Any of those goes straight to the top. Or Mick and "
-         "Dean telling me a Level 3 item is more urgent than I think, in which case we'd agree how to do it without "
-         "disrupting delivery."),
-        ("How will we know you've succeeded at 90 days?",
-         "The committed pipeline is delivered or on an agreed path, safely and at quoted margin. Crews and the office "
-         "haven't been disrupted. Milestones are invoiced as they're completed. And there's an agreed list of next-stage "
-         "options, with the timing left to you."),
-        ("Where does technology fit?",
-         "Later, and only behind the process. The prototypes are examples of what could be considered once the pipeline "
-         "is delivered. Nothing new would be introduced in the first 90 days."),
-    ]),
+ASSUMPTIONS = [
+    ("There's an existing pipeline of committed mandates to deliver.",
+     "List every committed job with Mick in week one.",
+     "If the pipeline is thinner than expected, Level 1 shifts to working with Dean on filling it, still without "
+     "changing how the crews work."),
+    ("The business wants stability, not dramatic change.",
+     "Ask Mick and Dean directly at the start, and confirm it at the day-30 review.",
+     "If they want to move faster, I'd bring Level 3 items forward, but still keep them out of peak."),
+    ("Job cost, variation and cash information sits partly with individuals and in spreadsheets.",
+     "Walk each live job with the person running it and see what they use.",
+     "If good reporting already exists, I'd use it and not build anything new."),
+    ("The season runs slow in January and February, heavy March to May, quiet in June and July, and peaks August to "
+     "November.",
+     "Check against the last two years of revenue and crew hours by month.",
+     "Re-time when the Level 2 controls go in and when any Level 3 change is made."),
+    ("Tickets, inductions and plant servicing are broadly current on live sites.",
+     "Check on every live site in the first fortnight.",
+     "Any gap goes straight to the top of the list, ahead of everything else."),
 ]
 
 
-def qa() -> str:
-    blocks = ""
-    for theme, items in QA:
-        blocks += f"<h2>{theme}</h2>" + "".join(
-            f"<details><summary>{q}</summary><p>{a}</p></details>" for q, a in items)
+def assumptions() -> str:
+    rows = "".join(f"<tr><td>{a}</td><td>{t}</td><td>{w}</td></tr>" for a, t, w in ASSUMPTIONS)
     return f"""
-{brief("Following your presentation, we will ask questions to explore: your reasoning; your assumptions; how you handle "
-       "challenge or ambiguity; how you adapt your approach based on new information.", [C_CALM, C_LEAD, C_JUDG])}
-<p class="lede">Likely questions, grouped under the four areas the brief says the Q&amp;A will cover. Each answer comes back
-to the same principle: deliver the existing mandates first, and add complexity only where it helps.</p>
-<div class="qa">{blocks}</div>
-<p class="note" style="margin-top:14px">For a question I haven't prepared for: what I'd want to understand first, what I'd
-do, and how I'd know it worked. Then check the answer against the principle: does this help us deliver what we've already
-committed to?</p>"""
+<p class="lede">I've put this plan together from outside the business, so it rests on a handful of assumptions. Here's what
+they are, how I'd test each one in the first 30 days, and what I'd do if one turns out to be wrong.</p>
+<h2>Why delivery comes first</h2>
+<p style="max-width:860px">The existing mandates are work Green Turf has already won. The revenue, the client
+relationships and the reputation are already on the line. Changing how people work while they're delivering puts that at
+risk, so the order is deliver, then light controls, then strategic change. It's also how I've worked before: at SILK I
+stabilised the Victorian operations first, and the acquisition and integration work came after that.</p>
+<h2>My assumptions, and how I'd test them</h2>
+<table><tr><th style="width:34%">Assumption</th><th style="width:28%">How I'd test it</th><th>If it's wrong</th></tr>{rows}
+</table>
+<h2>Where things aren't clear</h2>
+<div class="grid k2">
+<div class="card"><h3>How I'd approach it</h3><ul class="tight">
+<li>Work out what I need to understand first, and who already knows it</li>
+<li>Make the smallest decision that keeps live jobs moving</li>
+<li>Agree how we'll know whether it worked, and check back</li>
+<li>Test it against one question: does this help us deliver what we've already committed to?</li></ul></div>
+<div class="card"><h3>An example</h3><p style="margin:0">Dean wins a large new job that would stretch the current crews.
+I'd welcome it, then do a quick capacity check with Dean and Mick before we commit to dates: crews, plant,
+subcontractors and the impact on jobs already promised. We'd agree a start date that protects existing clients, or what
+we'd need to bring in to take it on. Everything can be delivered; it's a question of cost and timing.</p></div></div>
+<h2>Disagreement</h2>
+<p style="max-width:860px">If Mick or Dean sees it differently at the day-30 review, I'd want to understand what they're
+seeing that I'm not, and test it against what I've found on the live jobs. It's Mick's business. My job is to give him the
+clearest picture I can and a recommendation, then back the decision once it's made.</p>
+<h2>What would change the plan</h2>
+<ul class="tight"><li><b>A committed job in trouble.</b> It goes to the top of the list straight away</li>
+<li><b>A safety gap on a live site.</b> Fixed before anything else</li>
+<li><b>A cash issue.</b> Invoicing and collections take priority over everything except safety</li>
+<li><b>Mick and Dean deciding a Level 3 change is more urgent.</b> We'd agree how to do it without disrupting delivery,
+and time it outside peak</li></ul>"""
 
 
 SECTIONS = [
@@ -436,9 +402,10 @@ SECTIONS = [
     ("plan-4.html", "4 | Early Risks, Opportunities and Quick Wins",
      "Protect delivery now, and hold the bigger opportunities until the pipeline is complete", section4),
     ("plan-5.html", "5 | My Leadership Approach", "Support the people delivering the work, then improve it", section5),
-    ("season.html", "Season, ROIC and Service Efficiency", "Supporting analysis: how the year shapes the timing of the plan",
-     lambda: season_section(lv, brief, [C_COMM, C_JUDG, C_SEQ])),
-    ("qa.html", "Q&A Preparation", "The brief's four Q&A areas, with prepared answers", qa),
+    ("season.html", "Timing Across the Season", "How the year shapes when each part of the plan happens",
+     lambda: season_section(lv)),
+    ("assumptions.html", "Assumptions and What Would Change the Plan",
+     "What the plan rests on, how I'd test it, and how I'd adapt", assumptions),
 ]
 
 KEYS = """<script>
@@ -461,6 +428,5 @@ def pages(nav_for) -> dict[str, str]:
         pager += (f"<a class='l' href='/{prev_[0]}'><small>← Previous</small>{esc(prev_[1])}</a>" if prev_ else "<span></span>")
         pager += (f"<a class='r' href='/{next_[0]}'><small>Next →</small>{esc(next_[1])}</a>" if next_ else "<span></span>")
         pager += "</div>"
-        count = f"<p class='slidecount'>Section {i + 1} of {len(SECTIONS)} · use ← → keys to move between sections</p>"
-        out[fname] = shell(title, sub, count + fn() + pager + KEYS, nav_for(fname))
+        out[fname] = shell(title, sub, fn() + pager + KEYS, nav_for(fname))
     return out

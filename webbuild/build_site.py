@@ -17,13 +17,10 @@ PUBLIC = ROOT / "public"
 SITE = ROOT / "webbuild"
 
 NAV_GROUPS = [
-    ("90-day plan", [("index.html", "Overview"), ("plan-1.html", "1 · Get to know"), ("plan-2.html", "2 · Priorities"),
+    ("First 90 days", [("index.html", "Overview"), ("plan-1.html", "1 · Get to know"), ("plan-2.html", "2 · Priorities"),
                      ("plan-3.html", "3 · Partnering"), ("plan-4.html", "4 · Risks & quick wins"),
-                     ("plan-5.html", "5 · Leadership"), ("season.html", "Season & ROIC"),
-                     ("qa.html", "Q&A prep")]),
-    ("Prototypes", [("prototypes.html", "All"), ("reader.html", "Invoice reader"),
-                    ("invoice-reader-batch.html", "Batch results"), ("project-control.html", "Margin early-warning"),
-                    ("plant-allocation.html", "Plant allocation"), ("power-bi.html", "Power BI feeds")]),
+                     ("plan-5.html", "5 · Leadership"), ("season.html", "Timing across the season"),
+                     ("assumptions.html", "Assumptions")]),
 ]
 
 NAV_CSS = """<style>.sitenav{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 10px;margin:-8px 0 12px;
@@ -181,8 +178,6 @@ def landing() -> str:
          "Forecast margin at completion, exceptions with owners and due dates, tamper-evident action trail."),
         ("/plant-allocation.html", "Plant & operator allocation",
          "Lowest-cost weekly plan across owned fleet and hire, gated by tickets, inductions and service windows."),
-        ("/power-bi.html", "Power BI data feeds",
-         "Live CSV/JSON feeds for Power BI Desktop or Excel (Get Data → Web). Recalculated on every refresh."),
     ]
     html = "<div class='grid k2'>" + "".join(
         f"<a class='card' href='{u}' style='text-decoration:none;color:inherit'><h3>{t} →</h3><p class='note' style='margin:0'>{d}</p></a>"
@@ -194,7 +189,7 @@ down that path. They aren't proposals for the first 90 days. <a href="/index.htm
 interview. They show how automation could later give management better visibility and cut out repetitive admin.
 They're demonstrations on invented data, not implemented systems, and they make no claim about any company's current
 performance.</p>"""
-    return page("Business Modernisation Prototypes", "James Fischer-Myall · LogisticsDx", html)
+    return page("Working Examples", "Referred to in section 4: opportunities once the pipeline is delivered", html)
 
 
 def power_bi() -> str:
